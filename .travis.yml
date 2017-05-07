@@ -1,0 +1,17 @@
+sudo: false
+language: python
+cache: pip
+python:
+  - 3.4
+  - 3.5
+  - 3.6
+
+env:
+  - TOXENV=py35
+  - TOXENV=py34
+  - TOXENV=py33
+
+install:
+  - travis_retry pip install tox-travis
+script:
+  - tox
