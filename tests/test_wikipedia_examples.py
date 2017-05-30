@@ -2,7 +2,7 @@ from operator import itemgetter
 
 from lxml import etree
 
-from inxs import Config, Rule, Transformation
+from inxs import Rule, Transformation
 from inxs.lib import set_elementmaker, sorter
 
 from tests import equal_elements, parse
@@ -40,10 +40,9 @@ def test_wikipedia_example_1():
 
     transformation = Transformation(
         Rule(('person',), (extract_person, append_person)),
-        config=Config(result_object='context.target',
-                      context={'target': etree.Element('root')}))
+        result_object='context.target', context={'target': etree.Element('root')})
 
-    # that's three (or not counting line-breaks: six) lines less sloc than the XSLT implementation
+    # that's four (or not counting line-breaks: seven) lines less sloc than the XSLT implementation
 
     assert equal_elements(transformation(wp_document), expected)
 
@@ -80,7 +79,7 @@ def test_wikipedia_example_2():
         Rule(('person',), extract_person),
         sorter('persons', itemgetter(1)),
         list_persons,
-        config=Config(result_object='context.html', context={'persons': []}))
+        result_object='context.html', context={'persons': []})
 
     # that's eight (or not counting line-breaks: thirteen) lines less sloc
     # than the XSLT implementation

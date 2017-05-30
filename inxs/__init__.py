@@ -140,9 +140,6 @@ class Rule:
 # transformation
 
 
-Config = SimpleNamespace
-
-
 def _traverse_df_ltr_ttb(root) -> Iterator[etree._Element]:
     yield from root.iter()
 
@@ -151,6 +148,8 @@ class Transformation:
     __slots__ = ('name', 'rules', 'config', 'states')
 
     config_defaults = {
+        'context': {},
+        'copy': True,
         'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_TOP_TO_BOTTOM | TRAVERSE_LEFT_TO_RIGHT
     }
 
@@ -159,11 +158,10 @@ class Transformation:
             _traverse_df_ltr_ttb,
     }
 
-    def __init__(self, *rules, name: str = None,
-                 config: SimpleNamespace = None) -> None:
+    def __init__(self, *rules, name: str = None, **config) -> None:
         self.name = name
         self.rules = rules
-        self.config = SimpleNamespace() if config is None else config
+        self.config = SimpleNamespace(**config)
         self._set_config_defaults()
         self.states = None
 
@@ -172,8 +170,8 @@ class Transformation:
             if not hasattr(self.config, key):
                 setattr(self.config, key, value)
 
-    def __call__(self, source: Union[etree._Element, etree._ElementTree], copy=True) -> AnyType:
-        self._init_transformation(source, copy)
+    def __call__(self, source: Union[etree._Element, etree._ElementTree], **context) -> AnyType:
+        self._init_transformation(source, context)
 
         for rule in self.rules:
             self.states.current_rule = rule
@@ -191,12 +189,15 @@ class Transformation:
         self._finalize_transformation()
         return result
 
-    def _init_transformation(self, source, copy) -> None:
+    def _init_transformation(self, source, context) -> None:
         self.states = SimpleNamespace()
         self.states.previous_result = None
-        self.states.context = SimpleNamespace(**deepcopy(self.config.context))
 
-        if copy:
+        resolved_context = deepcopy(self.config.context)
+        resolved_context.update(context)
+        self.states.context = SimpleNamespace(**resolved_context)
+
+        if self.config.copy:
             source = deepcopy(source)
 
         if isinstance(source, etree._ElementTree):

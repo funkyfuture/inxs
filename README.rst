@@ -32,8 +32,7 @@ At a glimpse
 
           transformation = Transformation(
               Rule(('person',), (extract_person, append_person)),
-              config=Config(result_object='context.target',
-                            context={'target': etree.Element('root')}))
+              result_object='context.target', context={'target': etree.Element('root')})
 
      - .. code-block:: xslt
 
@@ -83,7 +82,7 @@ At a glimpse
               Rule(('person',), extract_person),
               sorter('persons', itemgetter(1)),
               list_persons,
-              config=Config(result_object='context.html', context={'persons': []}))
+              result_object='context.html', context={'persons': []})
 
      - .. code-block:: xslt
 
