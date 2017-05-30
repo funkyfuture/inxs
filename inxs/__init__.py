@@ -255,6 +255,9 @@ class Transformation:
                 kwargs['copy'] = False  # FIXME?! that may not always be desirable
             self.states.previous_result = handler(**kwargs)
 
+    def _finalize_transformation(self) -> None:
+        self.states = None
+
     @property
     def _available_dependencies(self) -> Mapping:
         context = self.states.context
@@ -279,9 +282,6 @@ class Transformation:
 
         return result
 
-    def _finalize_transformation(self) -> None:
-        self.states = None
-
     def _get_object_by_name(self, fqn) -> AnyType:
         context = self
         if fqn.startswith('context.'):
@@ -290,3 +290,9 @@ class Transformation:
         for name in fqn.split('.'):
             context = getattr(context, name)
         return context
+
+    # aliases that are supposed to be broken when the transformation isn't processed
+
+    @property
+    def context(self):
+        return self.states.context
