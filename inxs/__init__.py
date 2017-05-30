@@ -1,8 +1,7 @@
 from copy import deepcopy
 from functools import lru_cache
-import re
 from types import SimpleNamespace
-from typing import Callable, Iterator, Mapping, Sequence, Union
+from typing import Callable, Iterator, Mapping, Pattern, Sequence, Union
 from typing import Any as AnyType
 
 import dependency_injection
@@ -91,16 +90,16 @@ def MatchesAttributes(constraints: Mapping):
     def match_value(value, constraint):
         if isinstance(constraint, str):
             return value == constraint
-        elif isinstance(constraint, re._pattern_type):
+        elif isinstance(constraint, Pattern):
             return constraint.match(value)
 
-    def evaluator(element):
+    def evaluator(element, *_):
         attributes = element.attrib
         for key_constraint, value_constraint in constraints.items():
             if isinstance(key_constraint, str):
                 if not match_value(attributes[key_constraint], value_constraint):
                     return False
-            elif isinstance(key_constraint, re._pattern_type):
+            elif isinstance(key_constraint, Pattern):
                 for key in (x for x in attributes if key_constraint.match(x)):
                     if not match_value(attributes[key], value_constraint):
                         return False
