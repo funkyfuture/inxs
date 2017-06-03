@@ -27,7 +27,7 @@ class InxsException(Exception):
     pass
 
 
-class FlowControl(InxsException):  # FIXME rather like StopIteration
+class FlowControl(InxsException):
     pass
 
 
@@ -38,6 +38,13 @@ class AbortRule(FlowControl):
 
 class AbortTransformation(FlowControl):
     """ Can be raised to abort a transformation. """
+
+
+def is_flow_control(obj: AnyType) -> bool:
+    try:
+        return issubclass(obj, FlowControl)
+    except TypeError:
+        return False
 
 
 # helpers
@@ -244,6 +251,8 @@ class Transformation:
 
     def _apply_handlers(self, handlers) -> None:
         for handler in handlers:
+            if is_flow_control(handler):
+                raise handler
             if isinstance(handler, Sequence):
                 self._apply_handlers(handlers)
             kwargs = dependency_injection.resolve_dependencies(
