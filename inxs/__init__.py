@@ -89,7 +89,11 @@ def HasTag(tag: str):
 
 def MatchesXPath(xpath: str):
     def evaluator(element, transformation):
-        return element in transformation.states.xpath_evaluator(xpath)
+        if callable(xpath):
+            _xpath = xpath(transformation)
+        else:
+            _xpath = xpath
+        return element in transformation.states.xpath_evaluator(_xpath)
     return evaluator
 
 
@@ -115,7 +119,26 @@ def MatchesAttributes(constraints: Mapping):
     return evaluator
 
 
-# TODO If (to test stuff from the namespaces)
+def Ref(name):
+    def resolver(transformation):
+        return transformation._available_dependencies[name]
+    return resolver
+
+
+def If(x, operator, y):
+    def evaluator(_, transformation):
+        if callable(x):
+            _x = x(**dependency_injection.resolve_dependencies(
+                 x, transformation._available_dependencies).as_kwargs)
+        else:
+            _x = x
+        if callable(y):
+            _y = y(**dependency_injection.resolve_dependencies(
+                 y, transformation._available_dependencies).as_kwargs)
+        else:
+            _y = y
+        return operator(_x, _y)
+    return evaluator
 
 
 class Rule:
