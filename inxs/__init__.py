@@ -326,3 +326,11 @@ class Transformation:
     @property
     def context(self):
         return self.states.context
+
+    @property
+    def tree(self):
+        return self.states.context.tree
+
+    @property
+    def xpath_evaluator(self):
+        return self.states.xpath_evaluator
