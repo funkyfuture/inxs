@@ -118,6 +118,8 @@ class Rule:
                  traversal_order: int = None) -> None:
         self.name = name
         self.conditions = ()
+        if not isinstance(conditions, Sequence):
+            conditions = (conditions,)
         for condition in conditions:
             if isinstance(condition, str):
                 if ':' in condition and '::' not in condition:
@@ -133,6 +135,8 @@ class Rule:
                 self.conditions += (MatchesAttributes(condition),)
             else:
                 self.conditions += (condition,)
+        if not isinstance(handlers, Sequence):
+            handlers = (handlers,)
         self.handlers = handlers
         self.traversal_order = traversal_order
 
@@ -233,18 +237,12 @@ class Transformation:
         return traverser
 
     def _test_conditions(self, element, conditions) -> bool:
-        if not isinstance(conditions, Sequence):
-            conditions = (conditions,)
-
         for condition in conditions:
             if not condition(element, self):
                 return False
         return True
 
     def _apply_handlers(self, handlers) -> None:
-        if not isinstance(handlers, Sequence):
-            handlers = (handlers,)
-
         for handler in handlers:
             if isinstance(handler, Sequence):
                 self._apply_handlers(handlers)
