@@ -179,7 +179,7 @@ def _traverse_df_ltr_ttb(root) -> Iterator[etree._Element]:
 
 
 class Transformation:
-    __slots__ = ('name', 'rules', 'config', 'states')
+    __slots__ = ('name', 'description', 'config', 'rules', 'states')
 
     config_defaults = {
         'context': {},

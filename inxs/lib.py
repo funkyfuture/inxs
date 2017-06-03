@@ -6,6 +6,9 @@ from inxs.xml_utils import is_root_element, remove_element
 
 
 def drop_siblings(left_or_right):
+    """ Removes all elements left or right of the processed element depending which keyword was given.
+        The same is applied to all ancestors. Think of it like cutting a hedge from one side.
+    """
     if left_or_right == 'left':
         preceding = True
     elif left_or_right == 'right':
@@ -26,11 +29,16 @@ def drop_siblings(left_or_right):
     return processor
 
 
-def has_tail(element, _):
+def has_tail(element, _) -> bool:
+    """ Returns whether the element has a tail. """
     return bool(element.tail)
 
 
 def resolve_xpath_to_element(*names):
+    """ Resolves the objects from the context (which are supposed to be XPath expressions) referenced by ``names`` with
+        the *one* element that the XPaths yield or ``None``. This is useful when a copied tree is processed and it hence
+        makes no sense to pass Element objects to a transformation.
+    """
     def resolver(element, transformation):
         context = transformation.context
         for name in names:
@@ -49,6 +57,9 @@ def resolve_xpath_to_element(*names):
 
 
 def set_elementmaker(name: str = 'e', **kwargs):
+    """ Adds a :class:`lxml.builder.ElementMaker` with as ``name`` to the context. ``kwargs`` for its initialization
+        can be passed.
+    """
     if 'namespace' in kwargs and 'nsmap' not in kwargs:
         kwargs['nsmap'] = {None: kwargs['namespace']}
 
@@ -58,6 +69,7 @@ def set_elementmaker(name: str = 'e', **kwargs):
 
 
 def sorter(object_name: str, key: Callable):
+    """ Sorts the object referenced by ``name`` using ``key``. """
     def wrapped(transformation):
         return sorted(transformation._available_dependencies[object_name], key=key)
     return wrapped
