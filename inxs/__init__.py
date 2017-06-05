@@ -148,7 +148,7 @@ class Rule:
                  traversal_order: int = None) -> None:
         self.name = name
         self.conditions = ()
-        if not isinstance(conditions, Sequence):
+        if not isinstance(conditions, Sequence) or isinstance(conditions, str):
             conditions = (conditions,)
         for condition in conditions:
             if isinstance(condition, str):
