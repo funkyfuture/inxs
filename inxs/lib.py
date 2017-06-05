@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 from lxml import builder, etree
@@ -5,11 +6,32 @@ from lxml import builder, etree
 from inxs.xml_utils import is_root_element, remove_element
 
 
+# helpers
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+log = logger.debug
+
+
+__all__ = []
+
+
+def export(func):
+    __all__.append(func.__name__)
+    return func
+
+
+# the actual lib
+
+
+@export
 def cleanup_namespaces(root):
     """ Cleanup the namespaces of the root element. """
     etree.cleanup_namespaces(root)
 
 
+@export
 def concatenate(*parts):
     """ Concatenate the given parts which may be strings or callables returning such. """
     def evaluator(transformation):
@@ -26,6 +48,30 @@ def concatenate(*parts):
     return evaluator
 
 
+@export
+def debug_dump_document(tree):
+    """ Dumps the current state of the XML document to the log. """
+    log(etree.tostring(tree))
+
+
+@export
+def debug_symbols(*names):
+    """ Logs the current state of the objects referenced by ``names``. """
+    def handler(transformation):
+        for name in names:
+            log(transformation._available_dependencies[name])
+    return handler
+
+
+@export
+def debug_message(msg):
+    """ Logs the provided message. """
+    def evaluator():
+        log(msg)
+    return evaluator
+
+
+@export
 def drop_siblings(left_or_right):
     """ Removes all elements left or right of the processed element depending which keyword was given.
         The same is applied to all ancestors. Think of it like cutting a hedge from one side.
@@ -50,6 +96,7 @@ def drop_siblings(left_or_right):
     return processor
 
 
+@export
 def f(func, *args, **kwargs):
     """ Wraps the callable ``func`` which will be called as ``func(element, *args, **kwargs)``. """
     def wrapper(element):
@@ -57,6 +104,7 @@ def f(func, *args, **kwargs):
     return wrapper
 
 
+@export
 def get_attribute(name):
     """ Gets the value of the element's attribute named ``name``. """
     def evaluator(element):
@@ -64,21 +112,25 @@ def get_attribute(name):
     return evaluator
 
 
+@export
 def get_localname(element):
     """ Gets the element's local tag name. """
     return etree.QName(element).localname
 
 
+@export
 def has_tail(element, _) -> bool:
     """ Returns whether the element has a tail. """
     return bool(element.tail)
 
 
+@export
 def lowercase(previous_result):
     """ Processes ``previous_result`` to be all lower case. """
     return previous_result.lower()
 
 
+@export
 def pop_attribute(name):
     """ Pops the element's attribute named ``name``. """
     def handler(element):
@@ -86,6 +138,7 @@ def pop_attribute(name):
     return handler
 
 
+@export
 def put_variable(name):
     """ Puts the ``previous_result`` as ``name`` to the context namespace. """
     def handler(context, previous_result):
@@ -93,6 +146,7 @@ def put_variable(name):
     return handler
 
 
+@export
 def resolve_xpath_to_element(*names):
     """ Resolves the objects from the context (which are supposed to be XPath expressions) referenced by ``names`` with
         the *one* element that the XPaths yield or ``None``. This is useful when a copied tree is processed and it hence
@@ -115,6 +169,7 @@ def resolve_xpath_to_element(*names):
     return resolver
 
 
+@export
 def set_elementmaker(name: str = 'e', **kwargs):
     """ Adds a :class:`lxml.builder.ElementMaker` with as ``name`` to the context. ``kwargs`` for its initialization
         can be passed.
@@ -127,6 +182,7 @@ def set_elementmaker(name: str = 'e', **kwargs):
     return wrapped
 
 
+@export
 def set_localname(name):
     """ Sets the element's localname to ``name``. """
     def handler(element):
@@ -134,6 +190,7 @@ def set_localname(name):
     return handler
 
 
+@export
 def sorter(object_name: str, key: Callable):
     """ Sorts the object referenced by ``name`` using ``key``. """
     def wrapped(transformation):
@@ -141,6 +198,7 @@ def sorter(object_name: str, key: Callable):
     return wrapped
 
 
+@export
 def strip_attributes(*names):
     """ Strips all attributes with the keys provided as ``names`` from the element. """
     def handler(element):
@@ -149,6 +207,7 @@ def strip_attributes(*names):
     return handler
 
 
+@export
 def strip_namespace(element):
     """ Removes the namespace from the element.
         When used, :func:`cleanup_namespaces` should be applied at the end of the transformation.

@@ -1,5 +1,6 @@
 from copy import deepcopy
 from functools import lru_cache
+import logging
 from types import SimpleNamespace
 from typing import Callable, Iterator, Mapping, Pattern, Sequence, Union
 from typing import Any as AnyType
@@ -9,6 +10,7 @@ from lxml import etree
 
 
 # constants
+
 
 __version__ = '0.1a0'
 
@@ -20,6 +22,14 @@ TRAVERSE_TOP_TO_BOTTOM = True << 2
 TRAVERSE_BOTTOM_TO_TOP = False << 2
 
 
+# logging
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+log = logger.debug
+
+
 # exceptions
 
 
@@ -28,7 +38,9 @@ class InxsException(Exception):
 
 
 class FlowControl(InxsException):
-    pass
+    def __init__(self):
+        super().__init__()
+        log(f'{self.__class__.__name__} is evoked.')
 
 
 class AbortRule(FlowControl):
@@ -91,9 +103,10 @@ def MatchesXPath(xpath: str):
     def evaluator(element, transformation):
         if callable(xpath):
             _xpath = xpath(transformation)
+            log(f"Resolved XPath from callable: '{_xpath}'")
         else:
             _xpath = xpath
-        return element in transformation.states.xpath_evaluator(_xpath)
+        return element in transformation.xpath_evaluator(_xpath)
     return evaluator
 
 
@@ -121,6 +134,7 @@ def MatchesAttributes(constraints: Mapping):
 
 def Ref(name):
     def resolver(transformation):
+        log(f'Resolving {name}.')
         return transformation._available_dependencies[name]
     return resolver
 
@@ -130,11 +144,13 @@ def If(x, operator, y):
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
                  x, transformation._available_dependencies).as_kwargs)
+            log(f"x resolved to '{_x}'")
         else:
             _x = x
         if callable(y):
             _y = y(**dependency_injection.resolve_dependencies(
                  y, transformation._available_dependencies).as_kwargs)
+            log(f"y resolved to '{_y}'")
         else:
             _y = y
         return operator(_x, _y)
@@ -145,8 +161,9 @@ class Rule:
     __slots__ = ('name', 'conditions', 'handlers', 'traversal_order')
 
     def __init__(self, conditions, handlers, name: str = None,
-                 traversal_order: int = None) -> None:
+                 traversal_order: Union[int, None] = None) -> None:
         self.name = name
+        log(f"Initializing rule '{name}'.")
         self.conditions = ()
         if not isinstance(conditions, Sequence) or isinstance(conditions, str):
             conditions = (conditions,)
@@ -154,14 +171,18 @@ class Rule:
             if isinstance(condition, str):
                 if ':' in condition and '::' not in condition:
                     # assumes URI
+                    log(f'Adding {condition} as namespace condition.')
                     self.conditions += (HasNamespace(condition),)
                 elif condition.isalpha():
                     # assumes tag
+                    log(f"Adding {condition} as tag's local name condition.")
                     self.conditions += (HasTag(condition),)
                 else:
                     # assumes XPath
+                    log(f'Adding {condition} as XPath condition.')
                     self.conditions += (MatchesXPath(condition),)
             elif isinstance(condition, Mapping):
+                log(f'Adding {condition} as attribute condition.')
                 self.conditions += (MatchesAttributes(condition),)
             else:
                 self.conditions += (condition,)
@@ -194,6 +215,7 @@ class Transformation:
 
     def __init__(self, *rules, name: str = None, **config) -> None:
         self.name = name
+        log(f"Initializing transformation instance '{name}'.")
         self.rules = rules
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
@@ -202,12 +224,16 @@ class Transformation:
     def _set_config_defaults(self) -> None:
         for key, value in self.config_defaults.items():
             if not hasattr(self.config, key):
+                log(f"Using default value '{value}' for config key '{key}'.")
                 setattr(self.config, key, value)
 
     def __call__(self, source: Union[etree._Element, etree._ElementTree], **context) -> AnyType:
         self._init_transformation(source, context)
 
         for rule in self.rules:
+            _rule_name = rule.name if isinstance(rule, Rule) else rule.__name__
+            log(f"Processing rule '{_rule_name}'.")
+
             self.states.current_rule = rule
             try:
                 if isinstance(rule, Rule):
@@ -217,6 +243,7 @@ class Transformation:
                 else:
                     raise RuntimeError
             except AbortTransformation:
+                log("Aborting due to 'AbortTransformation'.")
                 break
 
         result = self._get_object_by_name(self.config.result_object)
@@ -224,32 +251,39 @@ class Transformation:
         return result
 
     def _init_transformation(self, source, context) -> None:
+        log(f'Initializing processing.')
         self.states = SimpleNamespace()
         self.states.previous_result = None
 
         resolved_context = deepcopy(self.config.context)
         resolved_context.update(context)
+        log(f'Initial context:\n{resolved_context}')
         self.states.context = SimpleNamespace(**resolved_context)
 
         if self.config.copy:
+            log('Cloning source document.')
             source = deepcopy(source)
 
         if isinstance(source, etree._ElementTree):
             self.states.context.tree = source
             self.states.context.root = source.getroot()
             if getattr(self.config, 'result_object', None) is None:
+                log("Setting result_object to 'context.tree'.")
                 self.config.result_object = 'context.tree'
         elif isinstance(source, etree._Element):
             self.states.context.tree = source.getroottree()
             self.states.context.root = source
             if getattr(self.config, 'result_object', None) is None:
+                log("Setting result_object to 'context.root'.")
                 self.config.result_object = 'context.root'
 
         self.states.xpath_evaluator = etree.XPathEvaluator(source, smart_prefix=True)
 
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
+        log(f'Using traverser: {traverser}')
         for element in traverser(self.states.context.root):
+            log(f'Evaluating {element}.')
             self.states.current_element = element
             if self._test_conditions(element, rule.conditions):
                 try:
@@ -267,12 +301,18 @@ class Transformation:
         return traverser
 
     def _test_conditions(self, element, conditions) -> bool:
+        # there's no dependency injection here because its overhead
+        # shall be avoided during testing conditions
         for condition in conditions:
+            log(f"Testing condition '{condition}'.")
             if not condition(element, self):
+                log('The condition did not apply.')
                 return False
+            log('The condition applied.')
         return True
 
     def _apply_handlers(self, handlers) -> None:
+        log('Applying handlers.')
         for handler in handlers:
             if is_flow_control(handler):
                 raise handler
@@ -283,9 +323,11 @@ class Transformation:
             if isinstance(handler, Transformation):
                 kwargs['source'] = self.states.current_element
                 kwargs['copy'] = False  # FIXME?! that may not always be desirable
+            log(f"Applying handler {handler}.")
             self.states.previous_result = handler(**kwargs)
 
     def _finalize_transformation(self) -> None:
+        log('Finalizing preocessing.')
         self.states = None
 
     @property
