@@ -146,6 +146,7 @@ def MatchesXPath(xpath: Union[str, Callable]):
 def MatchesAttributes(constraints: Mapping):
     def match_value(value, constraint):
         if isinstance(constraint, str):
+
             return value == constraint
         elif isinstance(constraint, Pattern):
             return constraint.match(value)
@@ -154,6 +155,8 @@ def MatchesAttributes(constraints: Mapping):
         attributes = element.attrib
         for key_constraint, value_constraint in constraints.items():
             if isinstance(key_constraint, str):
+                if key_constraint not in attributes:
+                    return False
                 if not match_value(attributes[key_constraint], value_constraint):
                     return False
             elif isinstance(key_constraint, Pattern):
@@ -165,7 +168,7 @@ def MatchesAttributes(constraints: Mapping):
     return evaluator
 
 
-def Ref(name):
+def Ref(name) -> AnyType:
     def resolver(transformation):
         log(f'Resolving {name}.')
         return transformation._available_dependencies[name]
@@ -243,6 +246,8 @@ class Transformation:
         self.rules = rules
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
+        for name in self.config.context:
+            assert name[0].isalpha()
         self.states = None
 
     def _set_config_defaults(self) -> None:
@@ -321,7 +326,7 @@ class Transformation:
             traversal_order = self.config.traversal_order
         traverser = self.traversers.get(traversal_order)
         if traverser is None:
-            raise NotImplemented
+            raise NotImplementedError
         return traverser
 
     def _test_conditions(self, element, conditions) -> bool:

@@ -34,7 +34,7 @@ def cleanup_namespaces(root):
 @export
 def concatenate(*parts):
     """ Concatenate the given parts which may be strings or callables returning such. """
-    def evaluator(transformation):
+    def evaluator(transformation) -> str:
         result = ''
         for part in parts:
             if callable(part):
@@ -141,6 +141,8 @@ def pop_attribute(name):
 @export
 def put_variable(name):
     """ Puts the ``previous_result`` as ``name`` to the context namespace. """
+    assert name[0].isalpha()
+
     def handler(context, previous_result):
         setattr(context, name, previous_result)
     return handler
