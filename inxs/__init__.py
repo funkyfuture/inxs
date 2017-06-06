@@ -20,6 +20,7 @@ TRAVERSE_LEFT_TO_RIGHT = True << 1
 TRAVERSE_RIGHT_TO_LEFT = False << 1
 TRAVERSE_TOP_TO_BOTTOM = True << 2
 TRAVERSE_BOTTOM_TO_TOP = False << 2
+TRAVERSE_ROOT_ONLY = True << 3
 
 
 # logging
@@ -62,6 +63,32 @@ def is_flow_control(obj: AnyType) -> bool:
 # helpers
 
 
+_is_root_condition = object()
+
+
+def _condition_factory(condition):
+    if isinstance(condition, str):
+        if condition == '/':
+            return _is_root_condition
+        elif ':' in condition and '::' not in condition:
+            # assumes URI
+            log(f'Adding {condition} as namespace condition.')
+            return HasNamespace(condition)
+        elif condition.isalpha():
+            # assumes tag
+            log(f"Adding {condition} as tag's local name condition.")
+            return HasTag(condition)
+        else:
+            # assumes XPath
+            log(f'Adding {condition} as XPath condition.')
+            return MatchesXPath(condition)
+    elif isinstance(condition, Mapping):
+        log(f'Adding {condition} as attribute condition.')
+        return MatchesAttributes(condition)
+    else:
+        return condition
+
+
 def dict_from_namespace(ns):
     return {x: getattr(ns, x) for x in dir(ns) if not x.startswith('_')}
 
@@ -70,18 +97,24 @@ def dict_from_namespace(ns):
 
 
 def Any(*conditions: Sequence):
+    conditions = tuple(_condition_factory(x) for x in conditions)
+
     def evaluator(element, *_):
         return any(x(element) for x in conditions)
     return evaluator
 
 
 def OneOf(*conditions: Sequence):
+    conditions = tuple(_condition_factory(x) for x in conditions)
+
     def evaluator(element, *_):
         return [(x(element) for x in conditions)].count(True) == 1
     return evaluator
 
 
 def Not(*conditions: Sequence):
+    conditions = tuple(_condition_factory(x) for x in conditions)
+
     def evaluator(element, *_):
         return not any(x(element) for x in conditions)
     return evaluator
@@ -99,7 +132,7 @@ def HasTag(tag: str):
     return evaluator
 
 
-def MatchesXPath(xpath: str):
+def MatchesXPath(xpath: Union[str, Callable]):
     def evaluator(element, transformation):
         if callable(xpath):
             _xpath = xpath(transformation)
@@ -167,25 +200,10 @@ class Rule:
         self.conditions = ()
         if not isinstance(conditions, Sequence) or isinstance(conditions, str):
             conditions = (conditions,)
-        for condition in conditions:
-            if isinstance(condition, str):
-                if ':' in condition and '::' not in condition:
-                    # assumes URI
-                    log(f'Adding {condition} as namespace condition.')
-                    self.conditions += (HasNamespace(condition),)
-                elif condition.isalpha():
-                    # assumes tag
-                    log(f"Adding {condition} as tag's local name condition.")
-                    self.conditions += (HasTag(condition),)
-                else:
-                    # assumes XPath
-                    log(f'Adding {condition} as XPath condition.')
-                    self.conditions += (MatchesXPath(condition),)
-            elif isinstance(condition, Mapping):
-                log(f'Adding {condition} as attribute condition.')
-                self.conditions += (MatchesAttributes(condition),)
-            else:
-                self.conditions += (condition,)
+        self.conditions = tuple(_condition_factory(x) for x in conditions)
+        if _is_root_condition in self.conditions:
+            traversal_order = TRAVERSE_ROOT_ONLY
+            self.conditions = tuple(x for x in self.conditions if x is not _is_root_condition)
         if not isinstance(handlers, Sequence):
             handlers = (handlers,)
         self.handlers = handlers
@@ -197,6 +215,11 @@ class Rule:
 
 def _traverse_df_ltr_ttb(root) -> Iterator[etree._Element]:
     yield from root.iter()
+
+
+def _traverse_root(root) -> Iterator[etree._Element]:
+    yield root
+    raise StopIteration
 
 
 class Transformation:
@@ -211,6 +234,7 @@ class Transformation:
     traversers = {
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
             _traverse_df_ltr_ttb,
+        TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
     def __init__(self, *rules, name: str = None, **config) -> None:
