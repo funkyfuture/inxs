@@ -235,7 +235,7 @@ def _traverse_root(root) -> Iterator[etree._Element]:
 
 
 class Transformation:
-    __slots__ = ('name', 'description', 'config', 'rules', 'states')
+    __slots__ = ('description', 'config', 'rules', 'states')
 
     config_defaults = {
         'context': {},
@@ -251,15 +251,18 @@ class Transformation:
         TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
-    def __init__(self, *rules, name: str = None, **config) -> None:
-        self.name = name
-        log(f"Initializing transformation instance '{name}'.")
+    def __init__(self, *rules, **config) -> None:
+        log(f"Initializing transformation instance named: '{config.get('name')}'.")
         self.rules = rules
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
         for name in self.config.context:
             assert name[0].isalpha()
         self.states = None
+
+    @property
+    def name(self):
+        return getattr(self.config, 'name', None)
 
     def _set_config_defaults(self) -> None:
         for key, value in self.config_defaults.items():
@@ -271,7 +274,7 @@ class Transformation:
         self._init_transformation(source, context)
 
         for rule in self.rules:
-            _rule_name = rule.name if isinstance(rule, Rule) else rule.__name__
+            _rule_name = rule.name if hasattr(rule, 'name') else rule.__name__
             log(f"Processing rule '{_rule_name}'.")
 
             self.states.current_rule = rule
@@ -387,7 +390,7 @@ class Transformation:
         })
 
         rule = self.states.current_rule
-        if isinstance(rule, Rule):
+        if hasattr(rule, 'name'):
             result['rule_name'] = rule.name
         elif callable(rule):
             result['rule_name'] = rule.__name__
