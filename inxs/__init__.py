@@ -63,7 +63,8 @@ def is_flow_control(obj: AnyType) -> bool:
 # helpers
 
 
-_is_root_condition = object()
+def _is_root_condition(element, transformation):
+    return element is transformation.root
 
 
 def _condition_factory(condition):
@@ -99,35 +100,35 @@ def dict_from_namespace(ns):
 def Any(*conditions: Sequence):
     conditions = tuple(_condition_factory(x) for x in conditions)
 
-    def evaluator(element, *_):
-        return any(x(element) for x in conditions)
+    def evaluator(element, transformation):
+        return any(x(element, transformation) for x in conditions)
     return evaluator
 
 
 def OneOf(*conditions: Sequence):
     conditions = tuple(_condition_factory(x) for x in conditions)
 
-    def evaluator(element, *_):
-        return [(x(element) for x in conditions)].count(True) == 1
+    def evaluator(element, transformation):
+        return [(x(element, transformation) for x in conditions)].count(True) == 1
     return evaluator
 
 
 def Not(*conditions: Sequence):
     conditions = tuple(_condition_factory(x) for x in conditions)
 
-    def evaluator(element, *_):
-        return not any(x(element) for x in conditions)
+    def evaluator(element, transformation):
+        return not any(x(element, transformation) for x in conditions)
     return evaluator
 
 
 def HasNamespace(namespace: str):
-    def evaluator(element, *_):
+    def evaluator(element, _):
         return etree.QName(element).namespace == namespace
     return evaluator
 
 
 def HasTag(tag: str):
-    def evaluator(element, *_):
+    def evaluator(element, _):
         return etree.QName(element).localname == tag
     return evaluator
 
