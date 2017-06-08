@@ -217,6 +217,14 @@ class Rule:
 # transformation
 
 
+def _traverse_df_ltr_btt(root) -> Iterator[etree._Element]:
+    def yield_children(element):
+        for child in element:
+            yield from yield_children(child)
+        yield element
+    yield from yield_children(root)
+
+
 def _traverse_df_ltr_ttb(root) -> Iterator[etree._Element]:
     yield from root.iter()
 
@@ -232,10 +240,12 @@ class Transformation:
     config_defaults = {
         'context': {},
         'copy': True,
-        'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_TOP_TO_BOTTOM | TRAVERSE_LEFT_TO_RIGHT
+        'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
     }
 
     traversers = {
+        TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP:
+            _traverse_df_ltr_btt,
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
             _traverse_df_ltr_ttb,
         TRAVERSE_ROOT_ONLY: _traverse_root
