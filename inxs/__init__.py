@@ -172,7 +172,7 @@ def MatchesAttributes(constraints: Mapping):
 def Ref(name) -> AnyType:
     def resolver(transformation):
         log(f'Resolving {name}.')
-        return transformation._available_dependencies[name]
+        return transformation._available_symbols[name]
     return resolver
 
 
@@ -180,13 +180,13 @@ def If(x, operator, y):
     def evaluator(_, transformation):
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
-                 x, transformation._available_dependencies).as_kwargs)
+                 x, transformation._available_symbols).as_kwargs)
             log(f"x resolved to '{_x}'")
         else:
             _x = x
         if callable(y):
             _y = y(**dependency_injection.resolve_dependencies(
-                 y, transformation._available_dependencies).as_kwargs)
+                 y, transformation._available_symbols).as_kwargs)
             log(f"y resolved to '{_y}'")
         else:
             _y = y
@@ -362,7 +362,7 @@ class Transformation:
             if isinstance(handler, Sequence):
                 self._apply_handlers(handlers)
             kwargs = dependency_injection.resolve_dependencies(
-                handler, self._available_dependencies).as_kwargs
+                handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
                 kwargs['source'] = self.states.current_element
                 kwargs['copy'] = False  # FIXME?! that may not always be desirable
@@ -374,7 +374,7 @@ class Transformation:
         self.states = None
 
     @property
-    def _available_dependencies(self) -> Mapping:
+    def _available_symbols(self) -> Mapping:
         context = self.states.context
         result = dict_from_namespace(self.config)
         result.update(dict_from_namespace(context))
