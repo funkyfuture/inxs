@@ -413,6 +413,10 @@ class Transformation:
         return self.states.context
 
     @property
+    def root(self):
+        return self.states.context.root
+
+    @property
     def tree(self):
         return self.states.context.tree
 
