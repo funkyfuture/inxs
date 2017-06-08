@@ -2,8 +2,7 @@ from operator import itemgetter
 
 from lxml import etree
 
-from inxs import Rule, Transformation
-from inxs.lib import set_elementmaker, sorter
+from inxs import lib, Rule, Transformation
 
 from tests import equal_elements, parse
 
@@ -74,10 +73,10 @@ def test_wikipedia_example_2():
         persons_list.extend(e.li(f'{x[1]}, {x[0]}') for x in previous_result)
 
     transformation = Transformation(
-        set_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
+        lib.set_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
         generate_skeleton,
         Rule(('person',), extract_person),
-        sorter('persons', itemgetter(1)),
+        lib.sorter('persons', itemgetter(1)),
         list_persons,
         result_object='context.html', context={'persons': []})
 

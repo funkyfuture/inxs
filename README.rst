@@ -77,10 +77,10 @@ At a glimpse
               persons_list.extend(e.li(f'{x[1]}, {x[0]}') for x in previous_result)
 
           transformation = Transformation(
-              add_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
+              lib.add_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
               generate_skeleton,
               Rule(('person',), extract_person),
-              sorter('persons', itemgetter(1)),
+              lib.sorter('persons', itemgetter(1)),
               list_persons,
               result_object='context.html', context={'persons': []})
 
