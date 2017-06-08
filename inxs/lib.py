@@ -32,6 +32,11 @@ def cleanup_namespaces(root):
 
 
 @export
+def clear_attributes(element):
+    element.attrib.clear()
+
+
+@export
 def concatenate(*parts):
     """ Concatenate the given parts which may be strings or callables returning such. """
     def evaluator(transformation) -> str:
@@ -97,10 +102,11 @@ def drop_siblings(left_or_right):
 
 
 @export
-def f(func, *args, **kwargs):
+def f(func, ref, *args, **kwargs):
     """ Wraps the callable ``func`` which will be called as ``func(element, *args, **kwargs)``. """
-    def wrapper(element):
-        return func(element, *args, **kwargs)
+    def wrapper(transformation):
+        arg = transformation._available_dependencies[ref]
+        return func(arg, *args, **kwargs)
     return wrapper
 
 
@@ -119,9 +125,24 @@ def get_localname(element):
 
 
 @export
+def has_attributes(element, _):
+    return bool(element.attrib)
+
+
+@export
+def has_children(element, _):
+    return bool(len(element))
+
+
+@export
 def has_tail(element, _) -> bool:
     """ Returns whether the element has a tail. """
     return bool(element.tail)
+
+
+@export
+def has_text(element, _):
+    return bool(element.text)
 
 
 @export
@@ -205,7 +226,7 @@ def strip_attributes(*names):
     """ Strips all attributes with the keys provided as ``names`` from the element. """
     def handler(element):
         for name in names:
-            element.attrib.pop(name)
+            element.attrib.pop(name, None)
     return handler
 
 
