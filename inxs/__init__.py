@@ -53,18 +53,7 @@ class AbortTransformation(FlowControl):
     """ Can be raised to abort a transformation. """
 
 
-def is_flow_control(obj: AnyType) -> bool:
-    try:
-        return issubclass(obj, FlowControl)
-    except TypeError:
-        return False
-
-
 # helpers
-
-
-def _is_root_condition(element, transformation):
-    return element is transformation.root
 
 
 def _condition_factory(condition):
@@ -90,8 +79,19 @@ def _condition_factory(condition):
         return condition
 
 
-def dict_from_namespace(ns):
+def _dict_from_namespace(ns):
     return {x: getattr(ns, x) for x in dir(ns) if not x.startswith('_')}
+
+
+def _is_flow_control(obj: AnyType) -> bool:
+    try:
+        return issubclass(obj, FlowControl)
+    except TypeError:
+        return False
+
+
+def _is_root_condition(element, transformation):
+    return element is transformation.root
 
 
 # rules definition
@@ -357,7 +357,7 @@ class Transformation:
     def _apply_handlers(self, handlers) -> None:
         dbg('Applying handlers.')
         for handler in handlers:
-            if is_flow_control(handler):
+            if _is_flow_control(handler):
                 raise handler
             if isinstance(handler, Sequence):
                 self._apply_handlers(handlers)
@@ -376,8 +376,8 @@ class Transformation:
     @property
     def _available_symbols(self) -> Mapping:
         context = self.states.context
-        result = dict_from_namespace(self.config)
-        result.update(dict_from_namespace(context))
+        result = _dict_from_namespace(self.config)
+        result.update(_dict_from_namespace(context))
         result.update({
             'config': self.config,
             'context': context,
@@ -423,3 +423,15 @@ class Transformation:
     @property
     def xpath_evaluator(self):
         return self.states.xpath_evaluator
+
+
+__all__ = [
+    '__version__', 'logger',
+    'TRAVERSE_BOTTOM_TO_TOP', 'TRAVERSE_DEPTH_FIRST', 'TRAVERSE_LEFT_TO_RIGHT', 'TRAVERSE_RIGHT_TO_LEFT',
+    'TRAVERSE_ROOT_ONLY', 'TRAVERSE_TOP_TO_BOTTOM', 'TRAVERSE_WIDTH_FIRST',
+    AbortRule.__name__, AbortTransformation.__name__, InxsException.__name__,
+    'Any', 'Not', 'OneOf',
+    'HasNamespace', 'HasTag', 'MatchesAttributes', 'MatchesXPath',
+    'If', 'Ref',
+    Rule.__name__, Transformation.__name__
+]
