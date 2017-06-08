@@ -18,7 +18,8 @@ def _prepend_tail(element):
 
 
 remove_empty_elements = Transformation(
-    Rule(Not(lib.has_children, lib.has_text, lib.has_attributes, '/'), (_prepend_tail, remove_element)),
+    Rule(Not(lib.has_children, lib.has_text, lib.has_attributes, '/'),
+         (_prepend_tail, remove_element)),
     name='remove_empty_elements',
     traversal_order=TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP
 )

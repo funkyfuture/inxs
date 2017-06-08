@@ -171,9 +171,10 @@ def put_variable(name):
 
 @export
 def resolve_xpath_to_element(*names):
-    """ Resolves the objects from the context (which are supposed to be XPath expressions) referenced by ``names`` with
-        the *one* element that the XPaths yield or ``None``. This is useful when a copied tree is processed and it hence
-        makes no sense to pass Element objects to a transformation.
+    """ Resolves the objects from the context (which are supposed to be XPath expressions)
+        referenced by ``names`` with the *one* element that the XPaths yield or ``None``. This is
+        useful when a copied tree is processed and it hence makes no sense to pass Element objects
+        to a transformation.
     """
     def resolver(element, transformation):
         context = transformation.context
@@ -194,8 +195,8 @@ def resolve_xpath_to_element(*names):
 
 @export
 def set_elementmaker(name: str = 'e', **kwargs):
-    """ Adds a :class:`lxml.builder.ElementMaker` with as ``name`` to the context. ``kwargs`` for its initialization
-        can be passed.
+    """ Adds a :class:`lxml.builder.ElementMaker` with as ``name`` to the context. ``kwargs`` for
+        its initialization can be passed.
     """
     if 'namespace' in kwargs and 'nsmap' not in kwargs:
         kwargs['nsmap'] = {None: kwargs['namespace']}

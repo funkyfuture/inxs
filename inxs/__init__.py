@@ -427,8 +427,9 @@ class Transformation:
 
 __all__ = [
     '__version__', 'logger',
-    'TRAVERSE_BOTTOM_TO_TOP', 'TRAVERSE_DEPTH_FIRST', 'TRAVERSE_LEFT_TO_RIGHT', 'TRAVERSE_RIGHT_TO_LEFT',
-    'TRAVERSE_ROOT_ONLY', 'TRAVERSE_TOP_TO_BOTTOM', 'TRAVERSE_WIDTH_FIRST',
+    'TRAVERSE_BOTTOM_TO_TOP', 'TRAVERSE_DEPTH_FIRST', 'TRAVERSE_LEFT_TO_RIGHT',
+    'TRAVERSE_RIGHT_TO_LEFT', 'TRAVERSE_ROOT_ONLY', 'TRAVERSE_TOP_TO_BOTTOM',
+    'TRAVERSE_WIDTH_FIRST',
     AbortRule.__name__, AbortTransformation.__name__, InxsException.__name__,
     'Any', 'Not', 'OneOf',
     'HasNamespace', 'HasTag', 'MatchesAttributes', 'MatchesXPath',
