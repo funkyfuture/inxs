@@ -10,8 +10,8 @@ from inxs.xml_utils import is_root_element, remove_element
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-log = logger.debug
+dbg = logger.debug
+nfo = logger.info
 
 
 __all__ = []
@@ -56,7 +56,7 @@ def concatenate(*parts):
 @export
 def debug_dump_document(tree):
     """ Dumps the current state of the XML document to the log. """
-    log(etree.tostring(tree))
+    nfo(etree.tostring(tree))
 
 
 @export
@@ -64,7 +64,7 @@ def debug_symbols(*names):
     """ Logs the current state of the objects referenced by ``names``. """
     def handler(transformation):
         for name in names:
-            log(transformation._available_dependencies[name])
+            nfo(transformation._available_symbols[name])
     return handler
 
 
@@ -72,7 +72,7 @@ def debug_symbols(*names):
 def debug_message(msg):
     """ Logs the provided message. """
     def evaluator():
-        log(msg)
+        nfo(msg)
     return evaluator
 
 
@@ -105,7 +105,7 @@ def drop_siblings(left_or_right):
 def f(func, ref, *args, **kwargs):
     """ Wraps the callable ``func`` which will be called as ``func(element, *args, **kwargs)``. """
     def wrapper(transformation):
-        arg = transformation._available_dependencies[ref]
+        arg = transformation._available_symbols[ref]
         return func(arg, *args, **kwargs)
     return wrapper
 
@@ -217,7 +217,7 @@ def set_localname(name):
 def sorter(object_name: str, key: Callable):
     """ Sorts the object referenced by ``name`` using ``key``. """
     def wrapped(transformation):
-        return sorted(transformation._available_dependencies[object_name], key=key)
+        return sorted(transformation._available_symbols[object_name], key=key)
     return wrapped
 
 
