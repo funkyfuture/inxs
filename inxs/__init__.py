@@ -79,10 +79,6 @@ def _condition_factory(condition):
         return condition
 
 
-def _dict_from_namespace(ns):
-    return {x: getattr(ns, x) for x in dir(ns) if not x.startswith('_')}
-
-
 def _is_flow_control(obj: AnyType) -> bool:
     try:
         return issubclass(obj, FlowControl)
@@ -256,8 +252,6 @@ class Transformation:
         self.rules = rules
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
-        for name in self.config.context:
-            assert name[0].isalpha()
         self.states = None
 
     @property
@@ -376,26 +370,18 @@ class Transformation:
     @property
     def _available_symbols(self) -> Mapping:
         context = self.states.context
-        result = _dict_from_namespace(self.config)
-        result.update(_dict_from_namespace(context))
-        result.update({
+        symbols = vars(self.config)
+        symbols.update(vars(context))
+        symbols.update({
             'config': self.config,
             'context': context,
             'element': getattr(self.states, 'current_element', None),
             'previous_result': self.states.previous_result,
             'root': context.root,
             'transformation': self,
-            'transformation_name': self.name,
             'tree': context.tree,
         })
-
-        rule = self.states.current_rule
-        if hasattr(rule, 'name'):
-            result['rule_name'] = rule.name
-        elif callable(rule):
-            result['rule_name'] = rule.__name__
-
-        return result
+        return symbols
 
     def _get_object_by_name(self, fqn) -> AnyType:
         context = self
