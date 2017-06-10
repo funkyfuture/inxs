@@ -67,7 +67,7 @@ def _condition_factory(condition):
         elif condition.isalpha():
             # assumes tag
             dbg(f"Adding {condition} as tag's local name condition.")
-            return HasTag(condition)
+            return HasLocalname(condition)
         else:
             # assumes XPath
             dbg(f'Adding {condition} as XPath condition.')
@@ -123,7 +123,7 @@ def HasNamespace(namespace: str):
     return evaluator
 
 
-def HasTag(tag: str):
+def HasLocalname(tag: str) -> Callable:
     def evaluator(element, _):
         return etree.QName(element).localname == tag
     return evaluator
@@ -418,7 +418,7 @@ __all__ = [
     'TRAVERSE_WIDTH_FIRST',
     AbortRule.__name__, AbortTransformation.__name__, InxsException.__name__,
     'Any', 'Not', 'OneOf',
-    'HasNamespace', 'HasTag', 'MatchesAttributes', 'MatchesXPath',
+    'HasNamespace', 'HasLocalname', 'MatchesAttributes', 'MatchesXPath',
     'If', 'Ref',
     Rule.__name__, Transformation.__name__
 ]
