@@ -23,4 +23,5 @@ remove_empty_elements = Transformation(
     name='remove_empty_elements',
     traversal_order=TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP
 )
+""" Removes elements without attributes, text, tail and children from the (sub-)tree. """
 __all__.append('remove_empty_elements')

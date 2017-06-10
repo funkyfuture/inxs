@@ -231,7 +231,7 @@ def _traverse_root(root) -> Iterator[etree._Element]:
 
 
 class Transformation:
-    __slots__ = ('description', 'config', 'rules', 'states')
+    __slots__ = ('config', 'steps', 'states')
 
     config_defaults = {
         'context': {},
