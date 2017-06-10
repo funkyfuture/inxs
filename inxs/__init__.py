@@ -227,7 +227,6 @@ def _traverse_df_ltr_ttb(root) -> Iterator[etree._Element]:
 
 def _traverse_root(root) -> Iterator[etree._Element]:
     yield root
-    raise StopIteration
 
 
 class Transformation:
@@ -247,9 +246,9 @@ class Transformation:
         TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
-    def __init__(self, *rules, **config) -> None:
+    def __init__(self, *steps, **config) -> None:
         dbg(f"Initializing transformation instance named: '{config.get('name')}'.")
-        self.rules = rules
+        self.steps = steps
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
         self.states = None
@@ -267,16 +266,16 @@ class Transformation:
     def __call__(self, source: Union[etree._Element, etree._ElementTree], **context) -> AnyType:
         self._init_transformation(source, context)
 
-        for rule in self.rules:
-            _rule_name = rule.name if hasattr(rule, 'name') else rule.__name__
-            dbg(f"Processing rule '{_rule_name}'.")
+        for step in self.steps:
+            _step_name = step.name if hasattr(step, 'name') else step.__name__
+            dbg(f"Processing rule '{_step_name}'.")
 
-            self.states.current_rule = rule
+            self.states.current_step = step
             try:
-                if isinstance(rule, Rule):
-                    self._apply_rule(rule)
-                elif callable(rule):
-                    self._apply_handlers((rule,))
+                if isinstance(step, Rule):
+                    self._apply_rule(step)
+                elif callable(step) or isinstance(step, Sequence):
+                    self._apply_handlers(step)
                 else:
                     raise RuntimeError
             except AbortTransformation:
@@ -324,9 +323,11 @@ class Transformation:
             self.states.current_element = element
             if self._test_conditions(element, rule.conditions):
                 try:
-                    self._apply_handlers(rule.handlers)
+                    self._apply_handlers(*rule.handlers)
                 except AbortRule:
                     break
+                finally:
+                    self.states.current_element = None
 
     @lru_cache(8)
     def _get_traverser(self, traversal_order: Union[int, None]) -> Callable:
@@ -348,13 +349,13 @@ class Transformation:
             dbg('The condition applied.')
         return True
 
-    def _apply_handlers(self, handlers) -> None:
+    def _apply_handlers(self, *handlers) -> None:
         dbg('Applying handlers.')
         for handler in handlers:
             if _is_flow_control(handler):
                 raise handler
             if isinstance(handler, Sequence):
-                self._apply_handlers(handlers)
+                self._apply_handlers(*handler)
             kwargs = dependency_injection.resolve_dependencies(
                 handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
