@@ -7,7 +7,7 @@ Contents:
 
    installation
    usage
-   api
+   modules
    contributing
    history
 
