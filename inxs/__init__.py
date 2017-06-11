@@ -392,13 +392,10 @@ class Transformation:
         return symbols
 
     def _get_object_by_name(self, fqn) -> AnyType:
-        context = self
-        if fqn.startswith('context.'):
-            fqn = 'states.' + fqn
-
+        namespace = self
         for name in fqn.split('.'):
-            context = getattr(context, name)
-        return context
+            namespace = getattr(namespace, name)
+        return namespace
 
     # aliases that are supposed to be broken when the transformation isn't processed
 
