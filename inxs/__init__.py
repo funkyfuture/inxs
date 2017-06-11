@@ -364,7 +364,7 @@ class Transformation:
             kwargs = dependency_injection.resolve_dependencies(
                 handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
-                kwargs['source'] = self.states.current_element
+                kwargs['source'] = self.states.current_element or self.states.context.tree
                 kwargs['copy'] = False  # FIXME?! that may not always be desirable
             dbg(f"Applying handler {handler}.")
             self.states.previous_result = handler(**kwargs)
