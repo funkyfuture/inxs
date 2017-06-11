@@ -378,7 +378,7 @@ class Transformation:
     @property
     def _available_symbols(self) -> Mapping:
         context = self.states.context
-        symbols = vars(self.config)
+        symbols = deepcopy(vars(self.config))
         symbols.update(vars(context))
         symbols.update({
             'config': self.config,
