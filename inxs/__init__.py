@@ -306,13 +306,18 @@ class Transformation:
             if getattr(self.config, 'result_object', None) is None:
                 dbg("Setting result_object to 'context.tree'.")
                 self.config.result_object = 'context.tree'
+                self.states.__config_result_object_is_none__ = True
+            else:
+                self.states.__config_result_object_is_none__ = False
         elif isinstance(source, etree._Element):
             self.states.context.tree = source.getroottree()
             self.states.context.root = source
             if getattr(self.config, 'result_object', None) is None:
                 dbg("Setting result_object to 'context.root'.")
                 self.config.result_object = 'context.root'
-
+                self.states.__config_result_object_is_none__ = True
+            else:
+                self.states.__config_result_object_is_none__ = False
         self.states.xpath_evaluator = etree.XPathEvaluator(source, smart_prefix=True)
 
     def _apply_rule(self, rule) -> None:
@@ -366,6 +371,8 @@ class Transformation:
 
     def _finalize_transformation(self) -> None:
         dbg('Finalizing preocessing.')
+        if self.states.__config_result_object_is_none__:
+            del self.config.result_object
         self.states = None
 
     @property
