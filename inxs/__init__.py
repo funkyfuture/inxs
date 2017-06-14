@@ -323,16 +323,16 @@ class Transformation:
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
         dbg(f'Using traverser: {traverser}')
-        for element in traverser(self.states.context.root):
-            dbg(f'Evaluating {element}.')
-            self.states.current_element = element
-            if self._test_conditions(element, rule.conditions):
-                try:
+        try:
+            for element in traverser(self.states.context.root):
+                dbg(f'Evaluating {element}.')
+                self.states.current_element = element
+                if self._test_conditions(element, rule.conditions):
                     self._apply_handlers(*rule.handlers)
-                except AbortRule:
-                    break
-                finally:
-                    self.states.current_element = None
+        except AbortRule:
+            pass
+        finally:
+            self.states.current_element = None
 
     @lru_cache(8)
     def _get_traverser(self, traversal_order: Union[int, None]) -> Callable:
