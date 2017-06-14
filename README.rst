@@ -19,7 +19,6 @@ At a glimpse
    :header-rows: 1
 
    * - **inxs**
-     - **XSLT**
    * - .. code-block:: python
 
           def extract_person(element):
@@ -34,7 +33,11 @@ At a glimpse
               Rule('person', (extract_person, append_person)),
               result_object='context.target', context={'target': etree.Element('root')})
 
-     - .. code-block:: xslt
+.. list-table::
+   :header-rows: 1
+
+   * - **XSLT**
+   * - .. code-block:: xslt
 
           <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
             <xsl:output method="xml" indent="yes"/>
@@ -54,13 +57,14 @@ At a glimpse
           </xsl:stylesheet>
 
 
+
+
 `Wikipedia XSLT example #2`_:
 
 .. list-table::
    :header-rows: 1
 
    * - **inxs**
-     - **XSLT**
    * - .. code-block:: python
 
 
@@ -84,7 +88,11 @@ At a glimpse
               list_persons,
               result_object='context.html', context={'persons': []})
 
-     - .. code-block:: xslt
+.. list-table::
+   :header-rows: 1
+
+   * - **XSLT**
+   * - .. code-block:: xslt
 
           <xsl:stylesheet version="1.0"
             xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
