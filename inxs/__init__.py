@@ -2,7 +2,7 @@ from copy import deepcopy
 from functools import lru_cache
 import logging
 from types import SimpleNamespace
-from typing import Callable, Iterator, Mapping, Pattern, Sequence, Union
+from typing import Callable, Dict, Iterator, Mapping, Pattern, Sequence, Union
 from typing import Any as AnyType
 
 import dependency_injection
@@ -27,6 +27,7 @@ TRAVERSE_ROOT_ONLY = True << 3
 
 
 logger = logging.getLogger(__name__)
+""" Module logger, configure as you need. """
 dbg = logger.debug
 nfo = logger.info
 
@@ -35,28 +36,36 @@ nfo = logger.info
 
 
 class InxsException(Exception):
+    """ Base class for inxs exceptions. """
     pass
 
 
 class FlowControl(InxsException):
+    """ Base class for exception that control the evaluation of handlers. """
     def __init__(self):
         super().__init__()
         dbg(f'{self.__class__.__name__} is evoked.')
 
 
 class AbortRule(FlowControl):
-    """ Can be raised to abort the evaluation of remaining rule handlers. """
+    """ Can be raised to abort the evaluation of the currently processed rule's remaining
+        tests and handlers.
+    """
     pass
 
 
 class AbortTransformation(FlowControl):
-    """ Can be raised to abort a transformation. """
+    """ Can be raised to cancel the remaining :term:`transformation steps`. """
 
 
 # helpers
 
+AttributesConditionType = Dict[Union[str, Pattern], Union[str, Pattern, None]]
 
-def _condition_factory(condition):
+
+def _condition_factory(condition: Union[str, AttributesConditionType, Callable]) -> Callable:
+    """ Generates test functions for conditions provided as string or mapping. """
+    # TODO '*' for all elements
     if isinstance(condition, str):
         if condition == '/':
             return _is_root_condition
@@ -93,71 +102,100 @@ def _is_root_condition(element, transformation):
 # rules definition
 
 
-def Any(*conditions: Sequence):
+def Any(*conditions: Sequence[Callable]) -> Callable:
+    """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
+        of them returned that.
+    """
     conditions = tuple(_condition_factory(x) for x in conditions)
 
-    def evaluator(element, transformation):
+    def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return any(x(element, transformation) for x in conditions)
     return evaluator
 
 
-def OneOf(*conditions: Sequence):
+def OneOf(*conditions: Sequence[Callable]) -> Callable:
+    """ Returns a callable that evaluates the provided test functions and returns ``True`` if
+        exactly one of them returned that.
+    """
     conditions = tuple(_condition_factory(x) for x in conditions)
 
-    def evaluator(element, transformation):
-        return [(x(element, transformation) for x in conditions)].count(True) == 1
+    def evaluator(element: etree._Element, transformation: Transformation) -> bool:
+        return [x(element, transformation) for x in conditions].count(True) == 1
     return evaluator
 
 
-def Not(*conditions: Sequence):
+def Not(*conditions: Sequence[Callable]) -> Callable:
+    """ Returns a callable that evaluates the provided test functions and returns ``True`` if none
+        of them returned that.
+    """
     conditions = tuple(_condition_factory(x) for x in conditions)
 
-    def evaluator(element, transformation):
+    def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return not any(x(element, transformation) for x in conditions)
     return evaluator
 
 
-def HasNamespace(namespace: str):
-    def evaluator(element, _):
+def HasNamespace(namespace: str) -> Callable:
+    """ Returns a callable that tests an element for the given namespace. """
+    def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).namespace == namespace
     return evaluator
 
 
 def HasLocalname(tag: str) -> Callable:
-    def evaluator(element, _):
+    """ Returns a callable that tests an element for the given local tag name. """
+    def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).localname == tag
     return evaluator
 
 
-def MatchesXPath(xpath: Union[str, Callable]):
-    def evaluator(element, transformation):
-        if callable(xpath):
-            _xpath = xpath(transformation)
-            dbg(f"Resolved XPath from callable: '{_xpath}'")
-        else:
-            _xpath = xpath
+def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
+    """ Returns a callable that tests an element for the given XPath expression. If the ``xpath``
+        argument is a callable, it will be called with the current transformation as argument to
+        obtain the expression.
+    """
+    def callable_evaluator(element: etree._Element, transformation: Transformation) -> bool:
+        _xpath = xpath(transformation)
+        dbg(f"Resolved XPath from callable: '{_xpath}'")
         return element in transformation.xpath_evaluator(_xpath)
-    return evaluator
+
+    def string_evaluator(element: etree._Element, transformation: Transformation) -> bool:
+        return element in transformation.xpath_evaluator(xpath)
+
+    return callable_evaluator if callable(xpath) else string_evaluator
 
 
-def MatchesAttributes(constraints: Mapping):
-    def match_value(value, constraint):
+def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
+    """ Returns a callable that tests an element's attributes  for constrains defined in a
+        dictionary.
+        All constraints must be matched to resolve as true. Expected keys and values can be
+        provided as string or compiled regular expression object from the :mod:`re` module.
+        A ``None`` as value constraint evaluates as true if the key is in the attributes regardless
+        its value. It also implies that at least one attribute must match the key's constraint if
+        this is a regular expression object.
+    """
+    # TODO optimize w/ dedicated functions
+    def match_value(value: str, constraint: Union[str, Pattern]) -> bool:
         if isinstance(constraint, str):
-
             return value == constraint
         elif isinstance(constraint, Pattern):
             return constraint.match(value)
 
-    def evaluator(element, *_):
+    def evaluator(element: etree._Element, _) -> bool:
         attributes = element.attrib
         for key_constraint, value_constraint in constraints.items():
             if isinstance(key_constraint, str):
                 if key_constraint not in attributes:
                     return False
+                if value_constraint is None:
+                    continue
                 if not match_value(attributes[key_constraint], value_constraint):
                     return False
             elif isinstance(key_constraint, Pattern):
-                for key in (x for x in attributes if key_constraint.match(x)):
+                matched_keys = [x for x in attributes if key_constraint.match(x)]
+                if value_constraint is None and not matched_keys:
+                    return False
+                for key in matched_keys:
                     if not match_value(attributes[key], value_constraint):
                         return False
         return True
@@ -165,15 +203,34 @@ def MatchesAttributes(constraints: Mapping):
     return evaluator
 
 
-def Ref(name) -> AnyType:
-    def resolver(transformation):
+def Ref(name: str) -> Callable:
+    """ Returns a callable that can be used for value resolution in a function that supports that.
+        The value will be looked up during the processing of a transformation in
+        :attr:`Transformation._available_symbols`
+        by the given ``name``.
+        This allows to reference dynamic values in :term:`transformation steps` and rules.
+    """
+    def resolver(transformation) -> AnyType:
         dbg(f'Resolving {name}.')
         return transformation._available_symbols[name]
     return resolver
 
 
-def If(x, operator, y):
-    def evaluator(_, transformation):
+def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
+    """ Returns a callable that can be used as condition test in a :class:`Rule`.
+        The arguments ``x`` and ``y`` can be given as callables that will be used to get the
+        ``operator``'s input values during execution.
+        Before you implement your own operators, mind that there are a lot available within
+        Python's ``__builtins__`` and the standard library, in particular the :mod:`operator`
+        module.
+
+        Examples:
+
+        >>> If(Ref('previous_result'), operator.is_not, None)
+
+    """
+    # TODO allow single arguments
+    def evaluator(_, transformation: Transformation) -> AnyType:
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
                  x, transformation._available_symbols).as_kwargs)
@@ -191,10 +248,37 @@ def If(x, operator, y):
 
 
 class Rule:
+    """ Instances of this class can be used as conditional :term:`transformation steps` that are
+        evaluated against all traversed elements.
+
+        :param conditions: All given conditions must evaluate as ``True`` in order for this
+                           rule to apply.
+                           Strings and mappings can be provided as shortcuts, see
+                           :ref:`rule_condition_shortcuts` for details.
+                           The conditions are always called with the currently evaluated
+                           ``element`` and the :class:`Transformation` instance as arguments.
+                           There are helper functions for grouping conditions: :func:`Any`,
+                           :func:`Not` and :func:`OneOf`.
+        :type conditions: A single callable, string or mapping, or a sequence of such.
+        :param handlers: These handlers will be called if the conditions matched. They can take
+                         any argument whose name is available in
+                         :attr:`Transformation._available_symbols`.
+        :type handlers: A single callable or a sequence of such.
+        :param name: The optional rule's name.
+        :type name: String.
+        :param traversal_order: An optional traversal order that overrides the transformation's
+                                default :attr:`Transformation.config.traversal_order`, see
+                                :ref:`traversal_strategies` for details.
+        :type traversal_order: Integer.
+    """
     __slots__ = ('name', 'conditions', 'handlers', 'traversal_order')
 
     def __init__(self, conditions, handlers, name: str = None,
-                 traversal_order: Union[int, None] = None) -> None:
+                 traversal_order: Union[int, None] = None):
+
+        # TODO concatenate subgroups of conditions and handlers, same w/ steps
+        # to remove instance checks during processing
+
         self.name = name
         dbg(f"Initializing rule '{name}'.")
         self.conditions = ()
@@ -230,6 +314,15 @@ def _traverse_root(root) -> Iterator[etree._Element]:
 
 
 class Transformation:
+    """ A transformation instance is defined by its :term:`transformation steps` and
+        :term:`configuration`. It is to be called with an ``lxml`` representation of an XML tree
+        or an XML element. In the latter case only this element and its children will be
+        considered during traversal. Also, arbitrary keyword arguments can be provided when
+        calling to populate the the transformation's :term:`context`.
+
+        :param steps: The designated transformation steps of the instance.
+        :param config: The configuration values for the instance.
+    """
     __slots__ = ('config', 'steps', 'states')
 
     config_defaults = {
@@ -237,6 +330,7 @@ class Transformation:
         'copy': True,
         'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
     }
+    """ The default :term:`configuration` values. """
 
     traversers = {
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP:
@@ -246,7 +340,7 @@ class Transformation:
         TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
-    def __init__(self, *steps, **config) -> None:
+    def __init__(self, *steps, **config):
         dbg(f"Initializing transformation instance named: '{config.get('name')}'.")
         self.steps = steps
         self.config = SimpleNamespace(**config)
@@ -255,6 +349,7 @@ class Transformation:
 
     @property
     def name(self):
+        """ The ``name`` member of the transformation's :term:`configuration`. """
         return getattr(self.config, 'name', None)
 
     def _set_config_defaults(self) -> None:
@@ -377,6 +472,20 @@ class Transformation:
 
     @property
     def _available_symbols(self) -> Mapping:
+        """ This mapping contains items that are used for the dependency injection of handler
+            functions. These names are included:
+
+            - All attributes of the transformation's :term:`configuration`, overridden by the
+              following.
+            - All attributes of the transformation's :term:`context`, overridden by the following.
+            - ``element`` - The element that matched a :class:`Rule`'s conditions or ``None``.
+            - ``previous_result`` - The result that was returned by the previously evaluated
+              handler function.
+            - ``root`` - The root element of the processed (sub-)document.
+            - ``transformation`` - The calling :class:`Transformation` instance.
+            - ``tree`` - The tree object of the processed document.
+
+        """
         context = self.states.context
         symbols = deepcopy(vars(self.config))
         symbols.update(vars(context))
@@ -397,22 +506,33 @@ class Transformation:
             namespace = getattr(namespace, name)
         return namespace
 
-    # aliases that are supposed to be broken when the transformation isn't processed
+    # aliases that are supposed to be broken when the transformation isn't processing
 
     @property
     def context(self):
+        """ This property can be used to access the :term:`context` while the transformation is
+            processing.
+        """
         return self.states.context
 
     @property
     def root(self):
+        """ This property can be used to access the root element of the currently processed
+            (sub-)document.
+        """
         return self.states.context.root
 
     @property
     def tree(self):
+        """ This property can be used to access the tree object of the currently processed
+            document.
+        """
         return self.states.context.tree
 
     @property
     def xpath_evaluator(self):
+        """ During a transformation an :class:`lxml.etree.XPathEvaluator` using the processed
+            (sub-)document's root element as such is bound to this property. """
         return self.states.xpath_evaluator
 
 

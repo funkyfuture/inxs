@@ -1,3 +1,13 @@
+"""
+This module contains common functions that can be used for either :class:`Rule` s' tests, as
+handler functions or simple transformation steps.
+
+Community contributions are highly appreciated, but it's hard to layout hard criteria for what
+belongs here and what not. In doubt open a pull request with your proposal as far as it proved
+functional to you, it doesn't need to be polished at that point.
+"""
+
+
 import logging
 from typing import Callable
 
@@ -27,12 +37,15 @@ def export(func):
 
 @export
 def cleanup_namespaces(root):
-    """ Cleanup the namespaces of the root element. """
+    """ Cleanup the namespaces of the root element. This should always be used at the end of a
+        transformation when elements' namespaces have been changed.
+    """
     etree.cleanup_namespaces(root)
 
 
 @export
 def clear_attributes(element):
+    """ Deletes all attributes of an element. """
     element.attrib.clear()
 
 
@@ -55,13 +68,14 @@ def concatenate(*parts):
 
 @export
 def debug_dump_document(tree):
-    """ Dumps the current state of the XML document to the log. """
+    """ Dumps the current state of the XML document to the log at info level. """
     nfo(etree.tostring(tree))
 
 
 @export
 def debug_symbols(*names):
-    """ Logs the current state of the objects referenced by ``names``. """
+    """ Logs the current state of the objects referenced by ``names`` in
+        :attr:`inxs.Transformation._available_symbols` at info level. """
     def handler(transformation):
         for name in names:
             nfo(transformation._available_symbols[name])
@@ -70,7 +84,7 @@ def debug_symbols(*names):
 
 @export
 def debug_message(msg):
-    """ Logs the provided message. """
+    """ Logs the provided message at info level. """
     def evaluator():
         nfo(msg)
     return evaluator
@@ -78,8 +92,10 @@ def debug_message(msg):
 
 @export
 def drop_siblings(left_or_right):
-    """ Removes all elements left or right of the processed element depending which keyword was given.
-        The same is applied to all ancestors. Think of it like cutting a hedge from one side.
+    """ Removes all elements ``left`` or ``right`` of the processed element depending which
+        keyword was given. The same is applied to all ancestors. Think of it like cutting a hedge
+        from one side. It can be used as a processing step to strip the document to a chunk
+        between two elements that don't have the same parent node.
     """
     if left_or_right == 'left':
         preceding = True
@@ -103,7 +119,9 @@ def drop_siblings(left_or_right):
 
 @export
 def f(func, ref, *args, **kwargs):
-    """ Wraps the callable ``func`` which will be called as ``func(element, *args, **kwargs)``. """
+    """ Wraps the callable ``func`` which will be called as ``func(<ref>, *args, **kwargs)`` where
+        ``<ref>`` is the object that is currently referenced by the name given as ``ref`` argument
+        from :attr:`inxs.Transformation._available_symbols`. """
     def wrapper(transformation):
         arg = transformation._available_symbols[ref]
         return func(arg, *args, **kwargs)
@@ -126,22 +144,25 @@ def get_localname(element):
 
 @export
 def has_attributes(element, _):
+    """ Returns ``True`` if the element has attributes. """
     return bool(element.attrib)
 
 
 @export
 def has_children(element, _):
+    """ Returns ``True`` if the element has descendants. """
     return bool(len(element))
 
 
 @export
-def has_tail(element, _) -> bool:
-    """ Returns whether the element has a tail. """
+def has_tail(element, _):
+    """ Returns ``True`` if the element has a tail. """
     return bool(element.tail)
 
 
 @export
 def has_text(element, _):
+    """ Returns ``True`` if the element has text content. """
     return bool(element.text)
 
 
@@ -162,8 +183,6 @@ def pop_attribute(name):
 @export
 def put_variable(name):
     """ Puts the ``previous_result`` as ``name`` to the context namespace. """
-    assert name[0].isalpha()
-
     def handler(context, previous_result):
         setattr(context, name, previous_result)
     return handler
@@ -173,10 +192,10 @@ def put_variable(name):
 def resolve_xpath_to_element(*names):
     """ Resolves the objects from the context (which are supposed to be XPath expressions)
         referenced by ``names`` with the *one* element that the XPaths yield or ``None``. This is
-        useful when a copied tree is processed and it hence makes no sense to pass Element objects
-        to a transformation.
+        useful when a copied tree is processed and 'XPath pointers' are passed to the
+        :term:`context` when a :class:`inxs.Transformation` is called.
     """
-    def resolver(element, transformation):
+    def resolver(transformation):
         context = transformation.context
         for name in names:
             xpath = getattr(context, name)
@@ -195,8 +214,8 @@ def resolve_xpath_to_element(*names):
 
 @export
 def set_elementmaker(name: str = 'e', **kwargs):
-    """ Adds a :class:`lxml.builder.ElementMaker` with as ``name`` to the context. ``kwargs`` for
-        its initialization can be passed.
+    """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context. ``kwargs`` for its
+        initialization can be passed.
     """
     if 'namespace' in kwargs and 'nsmap' not in kwargs:
         kwargs['nsmap'] = {None: kwargs['namespace']}
@@ -216,7 +235,11 @@ def set_localname(name):
 
 @export
 def sorter(object_name: str, key: Callable):
-    """ Sorts the object referenced by ``name`` using ``key``. """
+    """ Sorts the object referenced by ``name`` using ``key``.
+        See the `Sorting How To`_ for details on the latter one.
+
+        .. _Sorting How To: https://docs.python.org/3.4/howto/sorting.html#sortinghowto
+    """
     def wrapped(transformation):
         return sorted(transformation._available_symbols[object_name], key=key)
     return wrapped

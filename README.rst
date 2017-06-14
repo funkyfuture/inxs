@@ -31,7 +31,7 @@ At a glimpse
               return element
 
           transformation = Transformation(
-              Rule(('person',), (extract_person, append_person)),
+              Rule('person', (extract_person, append_person)),
               result_object='context.target', context={'target': etree.Element('root')})
 
      - .. code-block:: xslt
@@ -79,7 +79,7 @@ At a glimpse
           transformation = Transformation(
               lib.add_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
               generate_skeleton,
-              Rule(('person',), extract_person),
+              Rule('person', extract_person),
               lib.sorter('persons', itemgetter(1)),
               list_persons,
               result_object='context.html', context={'persons': []})

@@ -7,7 +7,8 @@ Contents:
 
    installation
    usage
-   modules
+   API <inxs>
+   FAQ <faq>
    contributing
    history
 

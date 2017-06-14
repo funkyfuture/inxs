@@ -1,3 +1,5 @@
+""" This module contains transformations that are supposedly of common interest. """
+
 from inxs import \
     (TRAVERSE_DEPTH_FIRST, TRAVERSE_BOTTOM_TO_TOP, TRAVERSE_LEFT_TO_RIGHT,
      lib, Not, Rule, Transformation)
