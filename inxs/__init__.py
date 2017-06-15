@@ -255,7 +255,7 @@ def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
         if callable(y):
             _y = y(**dependency_injection.resolve_dependencies(
                  y, transformation._available_symbols).as_kwargs)
-            dbg("y resolved to '{_y}'".format(_y))
+            dbg("y resolved to '{}'".format(_y))
         else:
             _y = y
         return operator(_x, _y)

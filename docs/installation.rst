@@ -6,7 +6,7 @@ Installation
 Prequisites
 -----------
 
-At least Python 3.4 and ``pip`` must be installed. As ``inxs`` is depending on a
+At least Python 3.5 and ``pip`` must be installed. As ``inxs`` is depending on a
 `proposed feature`_ for ``lxml``, its binary wheels can't be used for installation and it must be
 built locally::
 
