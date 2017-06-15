@@ -100,12 +100,21 @@ untouched. A transformation works on a copy of the document's tree unless the co
 contains a key ``copy`` set to ``False``.
 
 Transformations can also be used as simple steps - then invoked with the transformation root - or
-as rule handlers (then invoked with each matching element). At the moment such sub-transformations
-aren't operating on copies, but this is quiet implicit and is going to be changed in some way.
+as rule handlers - then invoked with each matching element. Per default these do not operate on
+copies, to do so :func:`inxs.lib.f` can be employed:
+
+.. code-block:: python
+
+    # as a simple step
+    f(sub_transformation, 'root', copy=False)
+    # as a rule handler
+    f(sub_transformation, 'element', copy=False)
 
 Any transformation step, condition or handler can be grouped into sequences to encourage code
 recycling - But don't take that as a permission to barbarously patching fragments of existing
-solutions together that you might feel are similar to your problem.
+solutions together that you might feel are similar to your problem. It's taken care that the
+items are retained as when then a transformation was initialized if groups were mutable types
+or generators.
 
 Now that the authoritarian part is reached, be advised that using expressive and unambiguous names
 is essential when designing transformations and their components. As a rule of thumb, a simple

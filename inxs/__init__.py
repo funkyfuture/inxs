@@ -380,8 +380,10 @@ class Transformation:
                 dbg("Using default value '{}' for config key '{}'.".format(value, key))
                 setattr(self.config, key, value)
 
-    def __call__(self, transformation_root: etree._Element, **context) -> AnyType:
-        self._init_transformation(transformation_root, context)
+    def __call__(self, transformation_root: etree._Element, copy: bool = None, **context) \
+            -> AnyType:
+        copy = self.config.copy if copy is None else copy
+        self._init_transformation(transformation_root, copy, context)
 
         for step in self.steps:
             _step_name = step.name if hasattr(step, 'name') else step.__name__
@@ -403,7 +405,7 @@ class Transformation:
         self._finalize_transformation()
         return result
 
-    def _init_transformation(self, transformation_root, context) -> None:
+    def _init_transformation(self, transformation_root, copy, context) -> None:
         dbg('Initializing processing.')
         if not isinstance(transformation_root, etree._Element):
             raise RuntimeError('A transformation must be called with an lxml Element object.')
@@ -416,7 +418,7 @@ class Transformation:
         dbg('Initial context:\n{}'.format(resolved_context))
         self.states.context = SimpleNamespace(**resolved_context)
 
-        if self.config.copy:
+        if copy:
             dbg('Cloning source document tree.')
             source_tree = transformation_root.getroottree()
             self.states.tree = deepcopy(source_tree)
@@ -478,8 +480,8 @@ class Transformation:
             kwargs = dependency_injection.resolve_dependencies(
                 handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
-                kwargs['source'] = self.states.current_element or self.states.root
-                kwargs['copy'] = False  # FIXME?! that may not always be desirable
+                kwargs['transformation_root'] = self.states.current_element or self.states.root
+                kwargs['copy'] = False
             dbg("Applying handler {}.".format(handler))
             self.states.previous_result = handler(**kwargs)
 
