@@ -91,21 +91,20 @@ returns the object referenced as ``html`` (see handler function in line 3) from 
 transformation hasn't explicitly configured a result object, (per default a copy of) the input tree
 or element is returned. Any other data is discarded.
 
-The initialized transformation can be called with an `lxml.ElementTree`_ or an element:
+The initialized transformation can now be called with an lxml element as transformation root:
 
     >>> result = transformation(xml_tree)
 
-When given a tree, the transformation root will be the tree's root element. A passed element
-doesn't need to be the document's root, leaving siblings and ancestors untouched.
-
-.. _lxml.ElementTree: http://lxml.de/api/lxml.etree._ElementTree-class.html
+A transformation root doesn't need to be the document's root, leaving siblings and ancestors
+untouched. A transformation works on a copy of the document's tree unless the configuration
+contains a key ``copy`` set to ``False``.
 
 Transformations can also be used as simple steps - then invoked with the transformation root - or
 as rule handlers (then invoked with each matching element). At the moment such sub-transformations
 aren't operating on copies, but this is quiet implicit and is going to be changed in some way.
 
 Any transformation step, condition or handler can be grouped into sequences to encourage code
-recycling - But don't take that as a permission to barbarously patching fragments of existin
+recycling - But don't take that as a permission to barbarously patching fragments of existing
 solutions together that you might feel are similar to your problem.
 
 Now that the authoritarian part is reached, be advised that using expressive and unambiguous names

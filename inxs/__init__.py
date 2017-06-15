@@ -329,13 +329,21 @@ def _traverse_root(root) -> Iterator[etree._Element]:
 
 class Transformation:
     """ A transformation instance is defined by its :term:`transformation steps` and
-        :term:`configuration`. It is to be called with an ``lxml`` representation of an XML tree
-        or an XML element. In the latter case only this element and its children will be
-        considered during traversal. Also, arbitrary keyword arguments can be provided when
-        calling to populate the the transformation's :term:`context`.
+        :term:`configuration`. It is to be called with an ``lxml`` representation of an XML element
+        as transformation root, only this element and its children will be considered during
+        traversal.
 
         :param steps: The designated transformation steps of the instance.
-        :param config: The configuration values for the instance.
+        :param config: The configuration values for the instance. Beside the following keywords, it
+                       can be populated with any key-value-pairs that will be available in
+                       :attr:`inxs.Transformation._available_symbols` during a transformation.
+                       - ``context`` can be provided as mapping with items that are added to the
+                         :term:`context` before a (sub-)document is processed.
+                       - ``copy`` is a boolean that defaults to ``True`` and indicates whether
+                         to process on a copy of the document's tree object.
+                       - ``traversal_order`` sets the default traversal order for rule evaluations
+                         and itself defaults to depth first, left to right, to to bottom. See
+                         :ref:`traversal_strategies` for possible values.
     """
     __slots__ = ('config', 'steps', 'states')
 
@@ -372,8 +380,8 @@ class Transformation:
                 dbg("Using default value '{}' for config key '{}'.".format(value, key))
                 setattr(self.config, key, value)
 
-    def __call__(self, source: Union[etree._Element, etree._ElementTree], **context) -> AnyType:
-        self._init_transformation(source, context)
+    def __call__(self, transformation_root: etree._Element, **context) -> AnyType:
+        self._init_transformation(transformation_root, context)
 
         for step in self.steps:
             _step_name = step.name if hasattr(step, 'name') else step.__name__
@@ -395,8 +403,11 @@ class Transformation:
         self._finalize_transformation()
         return result
 
-    def _init_transformation(self, source, context) -> None:
+    def _init_transformation(self, transformation_root, context) -> None:
         dbg('Initializing processing.')
+        if not isinstance(transformation_root, etree._Element):
+            raise RuntimeError('A transformation must be called with an lxml Element object.')
+
         self.states = SimpleNamespace()
         self.states.previous_result = None
 
@@ -406,28 +417,25 @@ class Transformation:
         self.states.context = SimpleNamespace(**resolved_context)
 
         if self.config.copy:
-            dbg('Cloning source document.')
-            source = deepcopy(source)
+            dbg('Cloning source document tree.')
+            source_tree = transformation_root.getroottree()
+            self.states.context.tree = deepcopy(source_tree)
+            transformation_root_xpath = source_tree.getpath(transformation_root)
+            self.states.context.root = \
+                self.states.context.tree.xpath(transformation_root_xpath, smart_prefix=True)[0]
+        else:
+            self.states.context.tree = transformation_root.getroottree()
+            self.states.context.root = transformation_root
 
-        if isinstance(source, etree._ElementTree):
-            self.states.context.tree = source
-            self.states.context.root = source.getroot()
-            if getattr(self.config, 'result_object', None) is None:
-                dbg("Setting result_object to 'context.tree'.")
-                self.config.result_object = 'context.tree'
-                self.states.__config_result_object_is_none__ = True
-            else:
-                self.states.__config_result_object_is_none__ = False
-        elif isinstance(source, etree._Element):
-            self.states.context.tree = source.getroottree()
-            self.states.context.root = source
-            if getattr(self.config, 'result_object', None) is None:
-                dbg("Setting result_object to 'context.root'.")
-                self.config.result_object = 'context.root'
-                self.states.__config_result_object_is_none__ = True
-            else:
-                self.states.__config_result_object_is_none__ = False
-        self.states.xpath_evaluator = etree.XPathEvaluator(source, smart_prefix=True)
+        if getattr(self.config, 'result_object', None) is None:
+            dbg("Setting result_object to 'context.root'.")
+            self.config.result_object = 'context.root'
+            self.states.__config_result_object_is_none__ = True
+        else:
+            self.states.__config_result_object_is_none__ = False
+
+        self.states.xpath_evaluator = \
+            etree.XPathEvaluator(self.states.context.root, smart_prefix=True)
 
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
