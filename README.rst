@@ -1,5 +1,5 @@
-inxs – A framework for XML transformations without boilerplate.
-===============================================================
+inxs – A Python framework for XML transformations without boilerplate.
+======================================================================
 
 inxs is inexcessive.
 
@@ -149,3 +149,6 @@ Ideas
 -----
 
 - a config option to define aliases for the available handler dependencies
+- common conditions per transformation that are tested for every rule
+- else handlers for rules
+
