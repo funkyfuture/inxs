@@ -60,7 +60,7 @@ def concatenate(*parts):
             elif isinstance(part, str):
                 _part = part
             else:
-                raise RuntimeError(f'Unhandled type: {type(part)}')
+                raise RuntimeError('Unhandled type: {}'.format(type(part)))
             result += _part
         return result
     return evaluator

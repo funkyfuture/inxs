@@ -44,7 +44,7 @@ class FlowControl(InxsException):
     """ Base class for exception that control the evaluation of handlers. """
     def __init__(self):
         super().__init__()
-        dbg(f'{self.__class__.__name__} is evoked.')
+        dbg('{} is evoked.'.format(self.__class__.__name__))
 
 
 class AbortRule(FlowControl):
@@ -71,18 +71,18 @@ def _condition_factory(condition: Union[str, AttributesConditionType, Callable])
             return _is_root_condition
         elif ':' in condition and '::' not in condition:
             # assumes URI
-            dbg(f'Adding {condition} as namespace condition.')
+            dbg('Adding {} as namespace condition.'.format(condition))
             return HasNamespace(condition)
         elif condition.isalpha():
             # assumes tag
-            dbg(f"Adding {condition} as tag's local name condition.")
+            dbg("Adding {} as tag's local name condition.".format(condition))
             return HasLocalname(condition)
         else:
             # assumes XPath
-            dbg(f'Adding {condition} as XPath condition.')
+            dbg('Adding {} as XPath condition.'.format(condition))
             return MatchesXPath(condition)
     elif isinstance(condition, Mapping):
-        dbg(f'Adding {condition} as attribute condition.')
+        dbg('Adding {} as attribute condition.'.format(condition))
         return MatchesAttributes(condition)
     else:
         return condition
@@ -156,7 +156,7 @@ def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
     """
     def callable_evaluator(element: etree._Element, transformation: Transformation) -> bool:
         _xpath = xpath(transformation)
-        dbg(f"Resolved XPath from callable: '{_xpath}'")
+        dbg("Resolved XPath from callable: '{}'".format(_xpath))
         return element in transformation.xpath_evaluator(_xpath)
 
     def string_evaluator(element: etree._Element, transformation: Transformation) -> bool:
@@ -211,7 +211,7 @@ def Ref(name: str) -> Callable:
         This allows to reference dynamic values in :term:`transformation steps` and rules.
     """
     def resolver(transformation) -> AnyType:
-        dbg(f'Resolving {name}.')
+        dbg('Resolving {}.'.format(name))
         return transformation._available_symbols[name]
     return resolver
 
@@ -234,13 +234,13 @@ def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
                  x, transformation._available_symbols).as_kwargs)
-            dbg(f"x resolved to '{_x}'")
+            dbg("x resolved to '{}'".format(_x))
         else:
             _x = x
         if callable(y):
             _y = y(**dependency_injection.resolve_dependencies(
                  y, transformation._available_symbols).as_kwargs)
-            dbg(f"y resolved to '{_y}'")
+            dbg("y resolved to '{_y}'".format(_y))
         else:
             _y = y
         return operator(_x, _y)
@@ -280,7 +280,7 @@ class Rule:
         # to remove instance checks during processing
 
         self.name = name
-        dbg(f"Initializing rule '{name}'.")
+        dbg("Initializing rule '{}'.".format(name))
         self.conditions = ()
         if not isinstance(conditions, Sequence) or isinstance(conditions, str):
             conditions = (conditions,)
@@ -341,7 +341,7 @@ class Transformation:
     }
 
     def __init__(self, *steps, **config):
-        dbg(f"Initializing transformation instance named: '{config.get('name')}'.")
+        dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
         self.steps = steps
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
@@ -355,7 +355,7 @@ class Transformation:
     def _set_config_defaults(self) -> None:
         for key, value in self.config_defaults.items():
             if not hasattr(self.config, key):
-                dbg(f"Using default value '{value}' for config key '{key}'.")
+                dbg("Using default value '{}' for config key '{}'.".format(value, key))
                 setattr(self.config, key, value)
 
     def __call__(self, source: Union[etree._Element, etree._ElementTree], **context) -> AnyType:
@@ -363,7 +363,7 @@ class Transformation:
 
         for step in self.steps:
             _step_name = step.name if hasattr(step, 'name') else step.__name__
-            dbg(f"Processing rule '{_step_name}'.")
+            dbg("Processing rule '{}'.".format(_step_name))
 
             self.states.current_step = step
             try:
@@ -382,13 +382,13 @@ class Transformation:
         return result
 
     def _init_transformation(self, source, context) -> None:
-        dbg(f'Initializing processing.')
+        dbg('Initializing processing.')
         self.states = SimpleNamespace()
         self.states.previous_result = None
 
         resolved_context = deepcopy(self.config.context)
         resolved_context.update(context)
-        dbg(f'Initial context:\n{resolved_context}')
+        dbg('Initial context:\n{}'.format(resolved_context))
         self.states.context = SimpleNamespace(**resolved_context)
 
         if self.config.copy:
@@ -417,10 +417,10 @@ class Transformation:
 
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
-        dbg(f'Using traverser: {traverser}')
+        dbg('Using traverser: {}'.format(traverser))
         try:
             for element in traverser(self.states.context.root):
-                dbg(f'Evaluating {element}.')
+                dbg('Evaluating {}.'.format(element))
                 self.states.current_element = element
                 if self._test_conditions(element, rule.conditions):
                     self._apply_handlers(*rule.handlers)
@@ -442,7 +442,7 @@ class Transformation:
         # there's no dependency injection here because its overhead
         # shall be avoided during testing conditions
         for condition in conditions:
-            dbg(f"Testing condition '{condition}'.")
+            dbg("Testing condition '{}'.".format(condition))
             if not condition(element, self):
                 dbg('The condition did not apply.')
                 return False
@@ -461,7 +461,7 @@ class Transformation:
             if isinstance(handler, Transformation):
                 kwargs['source'] = self.states.current_element or self.states.context.tree
                 kwargs['copy'] = False  # FIXME?! that may not always be desirable
-            dbg(f"Applying handler {handler}.")
+            dbg("Applying handler {}.".format(handler))
             self.states.previous_result = handler(**kwargs)
 
     def _finalize_transformation(self) -> None:
