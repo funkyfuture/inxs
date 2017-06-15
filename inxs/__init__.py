@@ -419,29 +419,28 @@ class Transformation:
         if self.config.copy:
             dbg('Cloning source document tree.')
             source_tree = transformation_root.getroottree()
-            self.states.context.tree = deepcopy(source_tree)
+            self.states.tree = deepcopy(source_tree)
             transformation_root_xpath = source_tree.getpath(transformation_root)
-            self.states.context.root = \
-                self.states.context.tree.xpath(transformation_root_xpath, smart_prefix=True)[0]
+            self.states.root = \
+                self.states.tree.xpath(transformation_root_xpath, smart_prefix=True)[0]
         else:
-            self.states.context.tree = transformation_root.getroottree()
-            self.states.context.root = transformation_root
+            self.states.tree = transformation_root.getroottree()
+            self.states.root = transformation_root
 
         if getattr(self.config, 'result_object', None) is None:
-            dbg("Setting result_object to 'context.root'.")
-            self.config.result_object = 'context.root'
+            dbg("Setting result_object to 'root'.")
+            self.config.result_object = 'root'
             self.states.__config_result_object_is_none__ = True
         else:
             self.states.__config_result_object_is_none__ = False
 
-        self.states.xpath_evaluator = \
-            etree.XPathEvaluator(self.states.context.root, smart_prefix=True)
+        self.states.xpath_evaluator = etree.XPathEvaluator(self.states.root, smart_prefix=True)
 
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
         dbg('Using traverser: {}'.format(traverser))
         try:
-            for element in traverser(self.states.context.root):
+            for element in traverser(self.states.root):
                 dbg('Evaluating {}.'.format(element))
                 self.states.current_element = element
                 if self._test_conditions(element, rule.conditions):
@@ -479,7 +478,7 @@ class Transformation:
             kwargs = dependency_injection.resolve_dependencies(
                 handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
-                kwargs['source'] = self.states.current_element or self.states.context.tree
+                kwargs['source'] = self.states.current_element or self.states.root
                 kwargs['copy'] = False  # FIXME?! that may not always be desirable
             dbg("Applying handler {}.".format(handler))
             self.states.previous_result = handler(**kwargs)
@@ -506,17 +505,16 @@ class Transformation:
             - ``tree`` - The tree object of the processed document.
 
         """
-        context = self.states.context
         symbols = deepcopy(vars(self.config))
-        symbols.update(vars(context))
+        symbols.update(vars(self.states.context))
         symbols.update({
             'config': self.config,
-            'context': context,
+            'context': self.states.context,
             'element': getattr(self.states, 'current_element', None),
             'previous_result': self.states.previous_result,
-            'root': context.root,
+            'root': self.states.root,
             'transformation': self,
-            'tree': context.tree,
+            'tree': self.states.tree,
         })
         return symbols
 
@@ -540,14 +538,14 @@ class Transformation:
         """ This property can be used to access the root element of the currently processed
             (sub-)document.
         """
-        return self.states.context.root
+        return self.states.root
 
     @property
     def tree(self):
         """ This property can be used to access the tree object of the currently processed
             document.
         """
-        return self.states.context.tree
+        return self.states.tree
 
     @property
     def xpath_evaluator(self):
