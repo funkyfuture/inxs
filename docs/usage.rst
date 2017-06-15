@@ -153,6 +153,7 @@ Rule condition shortcuts
 Strings can be used to specify certain rule conditions:
 
 - ``/`` selects only the transformation root
+- ``*`` selects all elements - should only be used if there are no other conditions
 - any string that contains a colon (but not more that one consecutively) selects elements with
   a namespace that matches the string
 - strings that contain only letters select elements whose local name matches the string

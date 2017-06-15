@@ -65,10 +65,11 @@ AttributesConditionType = Dict[Union[str, Pattern], Union[str, Pattern, None]]
 
 def _condition_factory(condition: Union[str, AttributesConditionType, Callable]) -> Callable:
     """ Generates test functions for conditions provided as string or mapping. """
-    # TODO '*' for all elements
     if isinstance(condition, str):
         if condition == '/':
             return _is_root_condition
+        elif condition == '*':
+            return _is_any_element_condition
         elif ':' in condition and '::' not in condition:
             # assumes URI
             dbg('Adding {} as namespace condition.'.format(condition))
@@ -86,6 +87,10 @@ def _condition_factory(condition: Union[str, AttributesConditionType, Callable])
         return MatchesAttributes(condition)
     else:
         return condition
+
+
+def _is_any_element_condition(_, __):
+    return True
 
 
 def _is_flow_control(obj: AnyType) -> bool:
