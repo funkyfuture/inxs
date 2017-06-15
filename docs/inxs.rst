@@ -7,7 +7,7 @@ See also:
 
    inxs.contrib
    inxs.lib
-   inxs.xml_utils
+   inxs.lxml_utils
 
 
 ``inxs`` module contents

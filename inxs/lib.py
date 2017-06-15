@@ -13,7 +13,7 @@ from typing import Callable
 
 from lxml import builder, etree
 
-from inxs.xml_utils import is_root_element, remove_element
+from inxs.lxml_utils import is_root_element, remove_element
 
 
 # helpers
