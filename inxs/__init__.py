@@ -89,6 +89,16 @@ def _condition_factory(condition: Union[str, AttributesConditionType, Callable])
         return condition
 
 
+def _flatten_sequence(seq):
+    result = []
+    for item in seq:
+        if isinstance(item, Sequence) and not isinstance(item, str):
+            result.extend(_flatten_sequence(item))
+        else:
+            result.append(item)
+    return tuple(result)
+
+
 def _is_any_element_condition(_, __):
     return True
 
@@ -281,21 +291,20 @@ class Rule:
     def __init__(self, conditions, handlers, name: str = None,
                  traversal_order: Union[int, None] = None):
 
-        # TODO concatenate subgroups of conditions and handlers, same w/ steps
-        # to remove instance checks during processing
-
         self.name = name
         dbg("Initializing rule '{}'.".format(name))
-        self.conditions = ()
+
         if not isinstance(conditions, Sequence) or isinstance(conditions, str):
             conditions = (conditions,)
+        conditions = _flatten_sequence(conditions)
         self.conditions = tuple(_condition_factory(x) for x in conditions)
         if _is_root_condition in self.conditions:
             traversal_order = TRAVERSE_ROOT_ONLY
             self.conditions = tuple(x for x in self.conditions if x is not _is_root_condition)
+
         if not isinstance(handlers, Sequence):
             handlers = (handlers,)
-        self.handlers = handlers
+        self.handlers = _flatten_sequence(handlers)
         self.traversal_order = traversal_order
 
 
@@ -347,7 +356,7 @@ class Transformation:
 
     def __init__(self, *steps, **config):
         dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
-        self.steps = steps
+        self.steps = _flatten_sequence(steps)
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
         self.states = None
@@ -374,7 +383,7 @@ class Transformation:
             try:
                 if isinstance(step, Rule):
                     self._apply_rule(step)
-                elif callable(step) or isinstance(step, Sequence):
+                elif callable(step):
                     self._apply_handlers(step)
                 else:
                     raise RuntimeError
@@ -459,8 +468,6 @@ class Transformation:
         for handler in handlers:
             if _is_flow_control(handler):
                 raise handler
-            if isinstance(handler, Sequence):
-                self._apply_handlers(*handler)
             kwargs = dependency_injection.resolve_dependencies(
                 handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
