@@ -6,7 +6,7 @@ from pytest import mark
 
 from inxs import lib, Rule, Transformation
 
-from tests import equal_elements, parse
+from tests import equal_subtree, parse
 
 
 wp_document = parse("""
@@ -46,7 +46,7 @@ def test_wikipedia_example_1():
 
     # that's four (or not counting line-breaks: seven) lines less sloc than the XSLT implementation
 
-    assert equal_elements(transformation(wp_document), expected)
+    assert equal_subtree(transformation(wp_document), expected)
 
 
 @mark.skipif(sys.version_info < (3, 6), reason='Uses f-strings.')
@@ -87,4 +87,4 @@ def test_wikipedia_example_2():
     # that's eight (or not counting line-breaks: thirteen) lines less sloc
     # than the XSLT implementation
 
-    assert equal_elements(transformation(wp_document), expected)
+    assert equal_subtree(transformation(wp_document), expected)
