@@ -181,38 +181,62 @@ def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
 
 
 def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
-    """ Returns a callable that tests an element's attributes  for constrains defined in a
-        dictionary.
+    """ Returns a callable that tests an element's attributes for constrains defined in a
+        :term:`mapping`.
         All constraints must be matched to resolve as true. Expected keys and values can be
         provided as string or compiled regular expression object from the :mod:`re` module.
         A ``None`` as value constraint evaluates as true if the key is in the attributes regardless
         its value. It also implies that at least one attribute must match the key's constraint if
-        this is a regular expression object.
+        this one is a regular expression object.
+        Alternatively a callable can be passed that returns such mappings during the
+        transformation.
     """
-    # TODO optimize w/ dedicated functions
-    def match_value(value: str, constraint: Union[str, Pattern]) -> bool:
-        if isinstance(constraint, str):
-            return value == constraint
-        elif isinstance(constraint, Pattern):
-            return constraint.match(value)
+    def callable_evaluator(transformation):
+        kwargs = dependency_injection.resolve_dependencies(
+            constraints, transformation._available_symbols).as_kwargs
+        return MatchesAttributes(constraints(**kwargs))(transformation.states.current_element)
+
+    if callable(constraints):
+        return callable_evaluator
+
+    key_string_constraints = {k: v for k, v in constraints.items() if isinstance(k, str)}
+    key_re_constraints = {k: v for k, v in constraints.items() if isinstance(k, Pattern)}
 
     def evaluator(element: etree._Element, _) -> bool:
         attributes = element.attrib
-        for key_constraint, value_constraint in constraints.items():
-            if isinstance(key_constraint, str):
-                if key_constraint not in attributes:
-                    return False
-                if value_constraint is None:
-                    continue
-                if not match_value(attributes[key_constraint], value_constraint):
-                    return False
-            elif isinstance(key_constraint, Pattern):
-                matched_keys = [x for x in attributes if key_constraint.match(x)]
-                if value_constraint is None and not matched_keys:
-                    return False
-                for key in matched_keys:
-                    if not match_value(attributes[key], value_constraint):
-                        return False
+        value_string_constraints, value_re_constraints = {}, {}
+
+        # check attributes' keys with string constraints
+        for key_constraint, value_constraint in key_string_constraints.items():
+            if key_constraint not in attributes:
+                return False
+            if value_constraint is None:
+                continue
+            if isinstance(value_constraint, str):
+                value_string_constraints[key_constraint] = value_constraint
+            elif isinstance(value_constraint, Pattern):
+                value_re_constraints[key_constraint] = value_constraint
+
+        # check attributes' keys with regular expression constraints
+        for key_constraint, value_constraint in key_re_constraints.items():
+            _matched = False
+            for attribute in (x for x in attributes if key_constraint.match(x)):
+                _matched = True
+                if isinstance(value_constraint, str):
+                    value_string_constraints[attribute] = value_constraint
+                elif isinstance(value_constraint, Pattern):
+                    value_re_constraints[attribute] = value_constraint
+            if value_constraint is None and not _matched:
+                return False
+
+        # check attributes' values
+        for key, constraint in value_string_constraints.items():
+            if attributes[key] != constraint:
+                return False
+        for key, constraint in value_re_constraints.items():
+            if not constraint.match(attributes[key]):
+                return False
+
         return True
 
     return evaluator
