@@ -216,5 +216,5 @@ Glossary
 
    transformation steps
       Transformation steps are :term:`handler function` s or :class:`inxs.Rule` s that define the
-      actions taken when a transformation is proecessed. The steps are stored as a linear graph,
+      actions taken when a transformation is processed. The steps are stored as a linear graph,
       rudimentary branching can be achieved by using rules.
