@@ -435,6 +435,7 @@ class Transformation:
             raise RuntimeError('A transformation must be called with an lxml Element object.')
 
         self.states = SimpleNamespace()
+        self.states.current_element = None
         self.states.previous_result = None
 
         resolved_context = deepcopy(self.config.context)
@@ -536,7 +537,7 @@ class Transformation:
         symbols.update({
             'config': self.config,
             'context': self.states.context,
-            'element': getattr(self.states, 'current_element', None),
+            'element': self.states.current_element,
             'previous_result': self.states.previous_result,
             'root': self.states.root,
             'transformation': self,
