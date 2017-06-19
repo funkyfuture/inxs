@@ -35,7 +35,7 @@ def test_config_is_immutable():
     strip_surrounding_content(doc, left=left, right=right)
 
 
-def test_subtransformation(info_logging):
+def test_subtransformation():
     subtransformation = Transformation(
         Rule('*', lib.set_localname('pablo'))
     )
