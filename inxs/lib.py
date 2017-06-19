@@ -257,10 +257,8 @@ def set_text(text):
 
 @export
 def sorter(name: str, key: Callable):
-    """ Sorts the object referenced by ``name`` in the :term:`context` using ``key``.
-        See the `Sorting How To`_ for details on the latter one.
-
-        .. _Sorting How To: https://docs.python.org/3/howto/sorting.html#sortinghowto
+    """ Sorts the object referenced by ``name`` in the :term:`context` using ``key`` as
+        :term:`key function`.
     """
     def wrapped(context):
         return sorted(getattr(context, name), key=key)

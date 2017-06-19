@@ -48,8 +48,8 @@ class FlowControl(InxsException):
 
 
 class AbortRule(FlowControl):
-    """ Can be raised to abort the evaluation of the currently processed rule's remaining
-        tests and handlers.
+    """ Can be raised to abort the evaluation of the currently processed :class:`inxs.Rule` 's
+        remaining tests and handlers.
     """
     pass
 
@@ -140,8 +140,8 @@ def OneOf(*conditions: Sequence[Callable]) -> Callable:
 
 
 def Not(*conditions: Sequence[Callable]) -> Callable:
-    """ Returns a callable that evaluates the provided test functions and returns ``True`` if none
-        of them returned that.
+    """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
+        of them returned ``False``.
     """
     conditions = tuple(_condition_factory(x) for x in conditions)
 
@@ -151,7 +151,7 @@ def Not(*conditions: Sequence[Callable]) -> Callable:
 
 
 def HasNamespace(namespace: str) -> Callable:
-    """ Returns a callable that tests an element for the given namespace. """
+    """ Returns a callable that tests an element for the given tag namespace. """
     def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).namespace == namespace
     return evaluator
@@ -165,9 +165,10 @@ def HasLocalname(tag: str) -> Callable:
 
 
 def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
-    """ Returns a callable that tests an element for the given XPath expression. If the ``xpath``
-        argument is a callable, it will be called with the current transformation as argument to
-        obtain the expression.
+    """ Returns a callable that tests an element for the given XPath expression (whether the
+        evaluation result on the transformation root contains it) . If the ``xpath`` argument is a
+        callable, it will be called with the current transformation as argument to obtain the
+        expression.
     """
     def callable_evaluator(element: etree._Element, transformation: Transformation) -> bool:
         _xpath = xpath(transformation)
@@ -243,11 +244,11 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 
 
 def Ref(name: str) -> Callable:
-    """ Returns a callable that can be used for value resolution in a function that supports that.
-        The value will be looked up during the processing of a transformation in
-        :attr:`Transformation._available_symbols`
-        by the given ``name``.
-        This allows to reference dynamic values in :term:`transformation steps` and rules.
+    """ Returns a callable that can be used for value resolution in a condition test or
+        :term:`handler function` that supports that. The value will be looked up during the
+        processing of a transformation in :attr:`Transformation._available_symbols` by the given
+        ``name``. This allows to reference dynamic values in :term:`transformation steps` and
+        :class:`Rule` s.
     """
     def resolver(transformation) -> AnyType:
         dbg('Resolving {}.'.format(name))
@@ -296,13 +297,13 @@ class Rule:
                            :ref:`rule_condition_shortcuts` for details.
                            The conditions are always called with the currently evaluated
                            ``element`` and the :class:`Transformation` instance as arguments.
-                           There are helper functions for grouping conditions: :func:`Any`,
-                           :func:`Not` and :func:`OneOf`.
-        :type conditions: A single callable, string or mapping, or a sequence of such.
+                           There are helper functions for grouping conditions logically:
+                           :func:`Any`, :func:`Not` and :func:`OneOf`.
+        :type conditions: A single callable, string or mapping, or a :term:`sequence` of such.
         :param handlers: These handlers will be called if the conditions matched. They can take
                          any argument whose name is available in
                          :attr:`Transformation._available_symbols`.
-        :type handlers: A single callable or a sequence of such.
+        :type handlers: A single callable or a :term:`sequence` of such.
         :param name: The optional rule's name.
         :type name: String.
         :param traversal_order: An optional traversal order that overrides the transformation's
@@ -361,10 +362,12 @@ class Transformation:
         :param config: The configuration values for the instance. Beside the following keywords, it
                        can be populated with any key-value-pairs that will be available in
                        :attr:`inxs.Transformation._available_symbols` during a transformation.
+
                        - ``context`` can be provided as mapping with items that are added to the
                          :term:`context` before a (sub-)document is processed.
                        - ``copy`` is a boolean that defaults to ``True`` and indicates whether
                          to process on a copy of the document's tree object.
+                       - ``name`` can be used to identify a transformation.
                        - ``traversal_order`` sets the default traversal order for rule evaluations
                          and itself defaults to depth first, left to right, to to bottom. See
                          :ref:`traversal_strategies` for possible values.

@@ -58,37 +58,36 @@ Get Started!
 
 Ready to contribute? Here's how to set up `inxs` for local development.
 
-1. `Fork`_ the `inxs` repo on GitHub.
-2. Clone your fork locally::
+1. Install the needed :ref:`prerequisites`
+2. `Fork`_ the `inxs` repo on GitHub.
+3. Clone your fork locally::
 
     $ git clone git@github.com:your_name_here/inxs.git
 
-3. Install your local copy into a virtualenv. Assuming you have `pew`_ installed, this is how you set up your fork for local development::
+4. Install your local copy into a virtualenv. Assuming you have `pew`_ installed, this is how you set up your fork for local development::
 
     $ cd inxs/
     $ pew new -a $(pwd) inxs
     $ pip install -r requirements-dev.txt
     $ python setup.py develop
 
-4. Create a branch for local development::
+5. Create a branch for local development::
 
     $ git checkout -b name-of-your-bugfix-or-feature
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the tests, including testing other Python versions with tox::
+6. When you're done making changes, check that your changes pass all QA tests::
 
-    $ flake8 inxs tests
-    $ pytest
     $ tox
 
-6. Commit your changes and push your branch to GitHub::
+7. Commit your changes and push your branch to GitHub::
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website.
+8. Submit a pull request through the GitHub website.
 
 Pull Request Guidelines
 -----------------------
@@ -96,10 +95,8 @@ Pull Request Guidelines
 Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
-2. If the pull request adds functionality, the docs should be updated. Put
-   your new functionality into a function with a docstring, and add the
-   feature to the list in README.rst.
-3. The pull request should work for Python 3.4, 3.5 and 3.6. Check
+2. If the pull request adds functionality, the docs should be updated.
+3. The pull request should work for Python 3.5 and 3.6. Check
    https://travis-ci.org/funkyfuture/inxs/pull_requests
    and make sure that the tests pass for all supported Python versions.
 

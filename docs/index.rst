@@ -2,23 +2,16 @@
    :description: A Python framework for XML transformations without boilerplate.
    :keywords: Python 3, XML, transformations, processing, framework, xslt, not xslt
 
-.. include:: ../README.rst
-
-Contents:
-
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    installation
    usage
-   API <inxs>
-   FAQ <faq>
+   inxs
+   genindex
+   faq
    contributing
    history
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. include:: ../README.rst

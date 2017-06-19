@@ -25,8 +25,8 @@ great playgrounds.
 Can I get help?
 ---------------
 
-In case you carefully studied the documentation, just open an issue on the `bug tracker`_.
+In case you carefully studied the documentation, just open an issue on the `issue tracker`_.
 Mind that you can't get supported to solve your actual problem, but rather to understand and use
 ``inxs`` as a tool to do so.
 
-.. _bug tracker: https://github.com/funkyfuture/inxs/issues
+.. _issue tracker: https://github.com/funkyfuture/inxs/issues
