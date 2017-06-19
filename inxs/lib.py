@@ -36,6 +36,16 @@ def export(func):
 
 
 @export
+def append_to_list(name):
+    """ Appends the result of the previous :term:`handler function` to the list referenced by
+        ``name`` on the :term:`context`.
+    """
+    def handler(context, previous_result):
+        getattr(context, name).append(previous_result)
+    return handler
+
+
+@export
 def cleanup_namespaces(root):
     """ Cleanup the namespaces of the root element. This should always be used at the end of a
         transformation when elements' namespaces have been changed.
@@ -74,7 +84,7 @@ def debug_dump_document(tree):
 
 @export
 def debug_symbols(*names):
-    """ Logs the current state of the objects referenced by ``names`` in
+    """ Logs the representation strings of the objects referenced by ``names`` in
         :attr:`inxs.Transformation._available_symbols` at info level. """
     def handler(transformation):
         for name in names:
@@ -182,7 +192,7 @@ def pop_attribute(name):
 
 @export
 def put_variable(name):
-    """ Puts the ``previous_result`` as ``name`` to the context namespace. """
+    """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
     def handler(context, previous_result):
         setattr(context, name, previous_result)
     return handler
@@ -195,8 +205,7 @@ def resolve_xpath_to_element(*names):
         useful when a copied tree is processed and 'XPath pointers' are passed to the
         :term:`context` when a :class:`inxs.Transformation` is called.
     """
-    def resolver(transformation):
-        context = transformation.context
+    def resolver(context, transformation):
         for name in names:
             xpath = getattr(context, name)
             if not xpath:
@@ -234,14 +243,22 @@ def set_localname(name):
 
 
 @export
-def sorter(object_name: str, key: Callable):
-    """ Sorts the object referenced by ``name`` using ``key``.
+def set_text(text):
+    """ Sets the element's text to the one provided as ``text``."""
+    def handler(element):
+        element.text = text
+    return handler
+
+
+@export
+def sorter(name: str, key: Callable):
+    """ Sorts the object referenced by ``name`` in the :term:`context` using ``key``.
         See the `Sorting How To`_ for details on the latter one.
 
-        .. _Sorting How To: https://docs.python.org/3.4/howto/sorting.html#sortinghowto
+        .. _Sorting How To: https://docs.python.org/3/howto/sorting.html#sortinghowto
     """
-    def wrapped(transformation):
-        return sorted(transformation._available_symbols[object_name], key=key)
+    def wrapped(context):
+        return sorted(getattr(context, name), key=key)
     return wrapped
 
 
