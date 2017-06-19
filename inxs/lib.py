@@ -238,7 +238,12 @@ def set_elementmaker(name: str = 'e', **kwargs):
 def set_localname(name):
     """ Sets the element's localname to ``name``. """
     def handler(element):
-        element.tag = etree.QName(element, name).text
+        namespace = etree.QName(element).namespace
+        if namespace is None:
+            qname = etree.QName(name)
+        else:
+            qname = etree.QName(namespace, name)
+        element.tag = qname.text
     return handler
 
 
