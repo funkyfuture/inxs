@@ -77,7 +77,7 @@ def test_wikipedia_example_2():
         persons_list.extend(e.li(f'{x[1]}, {x[0]}') for x in previous_result)
 
     transformation = Transformation(
-        lib.set_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
+        lib.init_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
         generate_skeleton,
         Rule('person', extract_person),
         lib.sorter('persons', itemgetter(1)),

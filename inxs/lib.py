@@ -222,7 +222,7 @@ def resolve_xpath_to_element(*names):
 
 
 @export
-def set_elementmaker(name: str = 'e', **kwargs):
+def init_elementmaker(name: str = 'e', **kwargs):
     """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context. ``kwargs`` for its
         initialization can be passed.
     """

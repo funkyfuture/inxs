@@ -23,7 +23,7 @@ Let's break its usage down with the second example from the ``README``:
    :linenos:
 
     transformation = Transformation(
-        lib.set_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
+        lib.init_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
         generate_skeleton,
         Rule('person', extract_person),
         lib.sorter('persons', itemgetter(1)),
@@ -33,7 +33,7 @@ Let's break its usage down with the second example from the ``README``:
 A transformation is set up by instantiating a :class:`inxs.Transformation` (line 1) with a series
 of :term:`transformation steps` (lines 2-6) and two :term:`configuration` values (line 7).
 
-The first step in line 2 uses :func:`inxs.lib.set_elementmaker` to put an ElementMaker_ instance
+The first step in line 2 uses :func:`inxs.lib.init_elementmaker` to put an ElementMaker_ instance
 into the :term:`context` namespace. In this case its name will be the default ``e``, the
 ``namespace`` argument is passed to its initialization.
 
