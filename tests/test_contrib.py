@@ -32,6 +32,6 @@ def test_remove_empty_elements():
     Just put my spine out of place
     <i>Hey man, my schooldays insane</i>Hey man, my work's down the drain
   </g>
-</root>    
-    """.strip())
+</root>
+    """.strip())  # noqa: W293
     assert equal_subtree(result, expected)

@@ -21,8 +21,8 @@ def test_concatenate():
 @mark.parametrize('ns,expected', ((None, 'rosa'), ('spartakus', '{spartakus}rosa')))
 def test_set_localname(ns, expected):
     if ns:
-        kwargs = {'namespace': ns,'nsmap': {None: ns}}
-    else :
+        kwargs = {'namespace': ns, 'nsmap': {None: ns}}
+    else:
         kwargs = {}
     element = builder.ElementMaker(**kwargs).karl()
 
