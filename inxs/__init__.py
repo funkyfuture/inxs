@@ -12,7 +12,7 @@ from lxml import etree
 # constants
 
 
-__version__ = '0.1a0'
+__version__ = '0.1b0'
 
 TRAVERSE_DEPTH_FIRST = True << 0
 TRAVERSE_WIDTH_FIRST = False << 0

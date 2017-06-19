@@ -22,6 +22,7 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
+VERSION = $(shell grep __version__ inxs/__init__.py | cut -f3 -d" " | tr -d "'")
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
@@ -48,7 +49,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 
 lint: ## check style with flake8
-	flake8 inxs tests
+	flake8 inxs tests setup.py
 
 test: ## run tests quickly with the default Python
 	pytest
@@ -74,7 +75,10 @@ servedocs: docs ## compile the docs watching for changes
 showdocs:
 	$(BROWSER) docs/_build/html/index.html
 
-release: clean ## package and upload a release
+release: test-all clean ## package and upload a release
+	git push
+	git tag -f $(VERSION)
+	git push -f origin $(VERSION)
 	python setup.py sdist upload
 	python setup.py bdist_wheel upload
 
