@@ -177,6 +177,19 @@ def has_text(element, _):
 
 
 @export
+def init_elementmaker(name: str = 'e', **kwargs):
+    """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context. ``kwargs`` for its
+        initialization can be passed.
+    """
+    if 'namespace' in kwargs and 'nsmap' not in kwargs:
+        kwargs['nsmap'] = {None: kwargs['namespace']}
+
+    def wrapped(context):
+        setattr(context, name, builder.ElementMaker(**kwargs))
+    return wrapped
+
+
+@export
 def lowercase(previous_result):
     """ Processes ``previous_result`` to be all lower case. """
     return previous_result.lower()
@@ -219,19 +232,6 @@ def resolve_xpath_to_element(*names):
             else:
                 raise RuntimeError('More than one element matched {}'.format(xpath))
     return resolver
-
-
-@export
-def init_elementmaker(name: str = 'e', **kwargs):
-    """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context. ``kwargs`` for its
-        initialization can be passed.
-    """
-    if 'namespace' in kwargs and 'nsmap' not in kwargs:
-        kwargs['nsmap'] = {None: kwargs['namespace']}
-
-    def wrapped(context):
-        setattr(context, name, builder.ElementMaker(**kwargs))
-    return wrapped
 
 
 @export
