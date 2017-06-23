@@ -1,3 +1,4 @@
+from collections import ChainMap
 from copy import deepcopy
 from functools import lru_cache
 import logging
@@ -527,6 +528,8 @@ class Transformation:
             - All attributes of the transformation's :term:`configuration`, overridden by the
               following.
             - All attributes of the transformation's :term:`context`, overridden by the following.
+            - ``config`` - The configuration namespace object.
+            - ``context`` - The context namespace object.
             - ``element`` - The element that matched a :class:`Rule`'s conditions or ``None``.
             - ``previous_result`` - The result that was returned by the previously evaluated
               handler function.
@@ -535,9 +538,7 @@ class Transformation:
             - ``tree`` - The tree object of the processed document.
 
         """
-        symbols = deepcopy(vars(self.config))
-        symbols.update(vars(self.states.context))
-        symbols.update({
+        guaranteed_symbols = {
             'config': self.config,
             'context': self.states.context,
             'element': self.states.current_element,
@@ -545,8 +546,8 @@ class Transformation:
             'root': self.states.root,
             'transformation': self,
             'tree': self.states.tree,
-        })
-        return symbols
+        }
+        return ChainMap(guaranteed_symbols, vars(self.states.context), vars(self.config))
 
     def _get_object_by_name(self, fqn) -> AnyType:
         namespace = self
