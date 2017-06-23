@@ -23,7 +23,6 @@ Solving the `Wikipedia XSLT example #1`_:
     def append_person(previous_result, target):
         element = etree.SubElement(target, 'name', {'username': previous_result[0]})
         element.text = previous_result[1]
-        return element
 
     transformation = Transformation(
         Rule('person', (extract_person, append_person)),

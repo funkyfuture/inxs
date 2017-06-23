@@ -1,8 +1,6 @@
 from operator import itemgetter
-import sys
 
 from lxml import etree
-from pytest import mark
 
 from inxs import lib, Rule, Transformation
 
@@ -23,7 +21,6 @@ wp_document = parse("""
 """)
 
 
-@mark.skipif(sys.version_info < (3, 6), reason='Uses f-strings.')
 def test_wikipedia_example_1():
     expected = parse("""
         <root>
@@ -38,18 +35,16 @@ def test_wikipedia_example_1():
     def append_person(previous_result, target):
         element = etree.SubElement(target, 'name', {'username': previous_result[0]})
         element.text = previous_result[1]
-        return element
 
     transformation = Transformation(
         Rule('person', (extract_person, append_person)),
         result_object='context.target', context={'target': etree.Element('root')})
 
-    # that's four (or not counting line-breaks: seven) lines less sloc than the XSLT implementation
+    # that's five (or not counting line-breaks: eight) lines less sloc than the XSLT implementation
 
     assert equal_subtree(transformation(wp_document), expected)
 
 
-@mark.skipif(sys.version_info < (3, 6), reason='Uses f-strings.')
 def test_wikipedia_example_2():
     expected = parse("""
         <html xmlns="http://www.w3.org/1999/xhtml">
