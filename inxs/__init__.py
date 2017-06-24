@@ -366,6 +366,10 @@ class Transformation:
 
                        - ``context`` can be provided as mapping with items that are added to the
                          :term:`context` before a (sub-)document is processed.
+                       - ``common_rule_conditions`` can be used to define one or more conditions
+                         that must match in all rule evaluations. E.g. a transformation could be
+                         restricted to elements with a certain namespace without redundantly
+                         defining that per rule.
                        - ``copy`` is a boolean that defaults to ``True`` and indicates whether
                          to process on a copy of the document's tree object.
                        - ``name`` can be used to identify a transformation.
@@ -393,6 +397,7 @@ class Transformation:
     def __init__(self, *steps, **config):
         dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
         self.steps = _flatten_sequence(steps)
+        self._expand_rules(config)
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
         self.states = None
@@ -401,6 +406,24 @@ class Transformation:
     def name(self):
         """ The ``name`` member of the transformation's :term:`configuration`. """
         return getattr(self.config, 'name', None)
+
+    def _expand_rules(self, config):
+        common_rule_conditions = config.pop('common_rule_conditions', None)
+        if common_rule_conditions is None:
+            return
+
+        if not isinstance(common_rule_conditions, Sequence) or \
+                isinstance(common_rule_conditions, str):
+            common_rule_conditions = (common_rule_conditions,)
+
+        expanded_steps = []
+        for step in self.steps:
+            if isinstance(step, Rule):
+                expanded_steps.append(Rule(common_rule_conditions + step.conditions, step.handlers,
+                                           step.name, step.traversal_order))
+            else:
+                expanded_steps.append(step)
+        self.steps = tuple(expanded_steps)
 
     def _set_config_defaults(self) -> None:
         for key, value in self.config_defaults.items():

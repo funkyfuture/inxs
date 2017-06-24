@@ -70,6 +70,16 @@ def test_attributes_re_key():
     assert transformation(document) == ['item1', 'item2']
 
 
+def test_common_conditions():
+    document = etree.fromstring('<root><a href="foo"/><a id="bar"/><a href="peng"/></root>')
+    transformation = Transformation(
+        Rule('*', (lib.get_attribute('href'), lib.append_to_list('references'))),
+        common_rule_conditions={'href': None},
+        context={'references': []}, result_object='context.references'
+    )
+    assert transformation(document) == ['foo', 'peng']
+
+
 def test_If():
     def return_zero():
         return 0
