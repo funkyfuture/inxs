@@ -31,7 +31,8 @@ Let's break its usage down with the second example from the ``README``:
         result_object='context.html', context={'persons': []})
 
 A transformation is set up by instantiating a :class:`inxs.Transformation` (line 1) with a series
-of :term:`transformation steps` (lines 2-6) and two :term:`configuration` values (line 7).
+of :term:`transformation steps` (lines 2-6) passed as positional :term:`argument` s and two
+:term:`configuration` values (line 7) provided as keyword arguments.
 
 The first step in line 2 uses :func:`inxs.lib.init_elementmaker` to put an ElementMaker_ instance
 into the :term:`context` namespace. In this case its name will be the default ``e``, the
@@ -93,7 +94,7 @@ transformation root is returned. Any other data is discarded.
 
 The initialized transformation can now be called with an lxml element as transformation root:
 
-    >>> result = transformation(xml_tree)
+    >>> result = transformation(xml_element)
 
 A transformation root doesn't need to be the document's root, leaving siblings and ancestors
 untouched. A transformation works on a copy of the document's tree unless the configuration
@@ -137,7 +138,7 @@ And now, space for some spots-on-.. sections.
 Traversal strategies
 --------------------
 
-When a rule is evaluated, the documnent (sub-)tree is traversed in a specified order. There are
+When a rule is evaluated, the document (sub-)tree is traversed in a specified order. There are
 three aspects that must be combined to define that order and are available as constants that are to
 be or'ed bitwise:
 
