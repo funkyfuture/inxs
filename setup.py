@@ -25,7 +25,7 @@ except ImportError:
 
 setup(
     name='inxs',
-    version='0.1b0',
+    version='0.1b1',
     description="A framework for XML transformations without boilerplate.",
     long_description=readme + '\n\n' + history,
     author="Frank Sachsenheim",
