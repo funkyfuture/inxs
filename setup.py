@@ -38,9 +38,10 @@ setup(
     dependency_links=['https://github.com/funkyfuture/lxml/tarball/smart_xpath#egg=lxml'],
     license="ISC license",
     zip_safe=False,
+    entry_points={'console_scripts': ['inxs = inxs.cli:main']},
     keywords='inxs xml processing transformation framework xslt not-xslt',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
