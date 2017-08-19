@@ -49,15 +49,20 @@ class FlowControl(InxsException):
 
 
 class AbortRule(FlowControl):
-    """ Can be raised to abort the evaluation of the currently processed :class:`inxs.Rule` 's
-        remaining tests and handlers.
+    """ Can be raised to abort the evaluation of all the currently processed :class:`inxs.Rule` 's
+        remaining tests and handlers. No further elements will be considered for that rule. This is
+        similar to Python's builtin ``break`` in iterations.
     """
-    pass
 
 
 class AbortTransformation(FlowControl):
     """ Can be raised to cancel the remaining :term:`transformation steps`. """
 
+
+class SkipToNextElement(FlowControl):
+    """ Can be raised to abort handling of the current element. This is similar to Python's
+        builtin ``continue`` in iterations.
+    """
 
 # helpers
 
@@ -493,16 +498,21 @@ class Transformation:
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
         dbg('Using traverser: {}'.format(traverser))
-        try:
-            for element in traverser(self.states.root):
-                dbg('Evaluating {}.'.format(element))
-                self.states.current_element = element
+
+        for element in traverser(self.states.root):
+            dbg('Evaluating {}.'.format(element))
+            self.states.current_element = element
+            try:
                 if self._test_conditions(element, rule.conditions):
                     self._apply_handlers(*rule.handlers)
-        except AbortRule:
-            pass
-        finally:
-            self.states.current_element = None
+            except AbortRule:
+                dbg('Aborting rule.')
+                break
+            except SkipToNextElement:
+                dbg('Skip to next element.')
+                continue
+
+        self.states.current_element = None
 
     @lru_cache(8)
     def _get_traverser(self, traversal_order: Union[int, None]) -> Callable:
