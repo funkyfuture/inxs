@@ -176,6 +176,27 @@ Speaking of conditions, see :func:`inxs.Any`, :func:`inxs.OneOf` and :func:`inxs
 the logical and evaluation of all tests.
 
 
+Caveats
+-------
+
+Modifications during iteration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to iteration over mutable types in Python, adding, moving or deleting elements to the
+tree breaks the iteration of a rule over elements. Thus such modifications must be applied in a
+simple transformation step; e.g. to remove all ``<br>`` elements from a document:
+
+.. code-block:: python
+
+    def collect_trash(element, trashbin):
+        trashbin.append(element)
+
+    transformation = Transformation(
+        Rule('//br', collect_trash),
+        lib.remove_elements('trashbin'),
+        context={'trashbin': []})
+
+
 Debugging / Logging
 -------------------
 
@@ -183,6 +204,10 @@ There are functions in the :mod:`inxs.lib` module to log information about a tra
 at info level. There's a ``logger`` object in that module too that needs to be set up with a
 handler and a log level in order to get the output (see :mod:`logging`). ``inxs`` itself produces
 very noisy messages at debug level.
+
+:func:`inxs.lib.debug_dump_document`, :func:`inxs.lib.debug_message` and
+:func:`inxs.lib.debug_symbols` can be used as :term:`handler function`.
+:func:`inxs.lib.dbg` and :func:`inxs.lib.nfo` can be used within test and handler functions.
 
 Due to its rather sparse and dynamic design, the exception tracebacks that are produced aren't
 very helpful as they contain no information about the context of an exception. To tackle one of
@@ -195,12 +220,14 @@ Glossary
 .. glossary::
 
    configuration
-      The configuration of a transformation is a :class:`types.SimpleNamespace` that is bound as
-      its ``config`` property and is intended to be an :term:`immutable` container for
-      key-value-pairs that persist through transformation's executions. Mind that it's immutability
-      isn't completely enforced, manipulating it might result in unexpected behaviour. It can be
-      referred to in :term:`handler function`'s signatures as ``config``, the same is true for its
-      member unless overridden in :attr:`inxs.Transformation._available_symbols`. See
+      The configuration of a transformation is a :class:`types.SimpleNamespace` object that is
+      bound as its ``config`` property and is populated by passing
+      :term:`keywords arguments <argument>` to its initialization.
+      It is intended to be an :term:`immutable` container for key-value-pairs that persist through
+      transformation's executions. Mind that it's immutability isn't completely enforced,
+      manipulating it or its members might result in unexpected behaviour. It can be referred to in
+      :term:`handler function`'s signatures as ``config``, the same is true for its member unless
+      overridden in :attr:`inxs.Transformation._available_symbols`. See
       :class:`inxs.Transformation` for details on reserved names in the configuration namespace.
 
    context
@@ -210,12 +237,12 @@ Glossary
       when calling a :class:`inxs.Transformation` instance.
 
    handler function
-      Handler :term:`function` s can be employed as simple :term:`transformation steps` or as
-      conditionally executed ``handlers`` of a :class:`inxs.Rule`. Any of their signature's
+      Handler :term:`functions <function>` can be employed as simple :term:`transformation steps`
+      or as conditionally executed ``handlers`` of a :class:`inxs.Rule`. Any of their signature's
       :term:`argument` s must be available in :attr:`inxs.Transformation._available_symbols` upon
       the time the function gets called.
 
    transformation steps
-      Transformation steps are :term:`handler function` s or :class:`inxs.Rule` s that define the
-      actions taken when a transformation is processed. The steps are stored as a linear graph,
-      rudimentary branching can be achieved by using rules.
+      Transformation steps are :term:`handler functions <handler function>` or :class:`inxs.Rule`
+      s that define the actions taken when a transformation is processed. The steps are stored as
+      a linear graph, rudimentary branching can be achieved by using rules.
