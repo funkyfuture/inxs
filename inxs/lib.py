@@ -83,6 +83,14 @@ def debug_dump_document(tree):
 
 
 @export
+def debug_message(msg):
+    """ Logs the provided message at info level. """
+    def evaluator():
+        nfo(msg)
+    return evaluator
+
+
+@export
 def debug_symbols(*names):
     """ Logs the representation strings of the objects referenced by ``names`` in
         :attr:`inxs.Transformation._available_symbols` at info level. """
@@ -90,14 +98,6 @@ def debug_symbols(*names):
         for name in names:
             nfo(transformation._available_symbols[name])
     return handler
-
-
-@export
-def debug_message(msg):
-    """ Logs the provided message at info level. """
-    def evaluator():
-        nfo(msg)
-    return evaluator
 
 
 @export
@@ -208,6 +208,21 @@ def put_variable(name):
     """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
     def handler(context, previous_result):
         setattr(context, name, previous_result)
+    return handler
+
+
+@export
+def remove_elements(references, keep_children=False, clear_ref=True):
+    """ Removes all elements from the document that are referenced in a list that is available
+        as ``references``. ``keep_children`` is passed to :func:`inxs.lxml_utils.remove_element`.
+        The reference list is cleared afterwards if ``clear_ref`` is ``True``.
+    """
+    def handler(transformation):
+        elements = transformation._available_symbols[references]
+        for element in elements:
+            remove_element(element, keep_children=keep_children)
+        if clear_ref:
+            elements.clear()
     return handler
 
 
