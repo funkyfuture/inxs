@@ -561,14 +561,17 @@ class Transformation:
             - All attributes of the transformation's :term:`configuration`, overridden by the
               following.
             - All attributes of the transformation's :term:`context`, overridden by the following.
-            - ``config`` - The configuration namespace object.
-            - ``context`` - The context namespace object.
-            - ``element`` - The element that matched a :class:`Rule`'s conditions or ``None``.
+            - ``config`` - The :term:`configuration` namespace object.
+            - ``context`` - The :term:`context` namespace object.
+            - ``element`` - The element that matched a :class:`Rule`'s conditions or ``None`` in
+              case of :term:`simple transfotmation steps`.
             - ``previous_result`` - The result that was returned by the previously evaluated
               handler function.
-            - ``root`` - The root element of the processed (sub-)document.
+            - ``root`` - The root element of the processed (sub-)document a.k.a tranformation root.
             - ``transformation`` - The calling :class:`Transformation` instance.
             - ``tree`` - The tree object of the processed document.
+            - ``xpath_evaluator`` - The XPathEvaluator instance that is bound to the
+              transformation root.
 
         """
         guaranteed_symbols = {
@@ -579,6 +582,7 @@ class Transformation:
             'root': self.states.root,
             'transformation': self,
             'tree': self.states.tree,
+            'xpath_evaluator': self.states.xpath_evaluator
         }
         return ChainMap(guaranteed_symbols, vars(self.states.context), vars(self.config))
 
