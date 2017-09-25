@@ -108,9 +108,9 @@ copies, to do so :func:`inxs.lib.f` can be employed:
 .. code-block:: python
 
     # as a simple step
-    f(sub_transformation, 'root', copy=False)
+    f(sub_transformation, 'root', copy=True)
     # as a rule handler
-    f(sub_transformation, 'element', copy=False)
+    f(sub_transformation, 'element', copy=True)
 
 Any transformation step, condition or handler can be grouped into :term:`sequence` s to encourage
 code recycling - But don't take that as a permission to barbarously patching fragments of existing

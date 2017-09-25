@@ -364,20 +364,27 @@ class Transformation:
         as transformation root, only this element and its children will be considered during
         traversal.
 
-        :param steps: The designated transformation steps of the instance.
-        :param config: The configuration values for the instance. Beside the following keywords, it
-                       can be populated with any key-value-pairs that will be available in
-                       :attr:`inxs.Transformation._available_symbols` during a transformation.
+        :param steps: The designated transformation steps of the instance are given as a sequence
+                      of positional arguments.
+        :param config: The configuration values for the instance are passed as keyword arguments.
+                       Beside the following keywords, it can be populated with any key-value-pairs
+                       that will be available in :attr:`inxs.Transformation._available_symbols`
+                       during a transformation.
+                       The defaults are defined in :attr:`~inxs.config_defaults`.
 
                        - ``context`` can be provided as mapping with items that are added to the
                          :term:`context` before a (sub-)document is processed.
                        - ``common_rule_conditions`` can be used to define one or more conditions
                          that must match in all rule evaluations. E.g. a transformation could be
                          restricted to elements with a certain namespace without redundantly
-                         defining that per rule.
+                         defining that per rule. Can be given as a single object (e.g. a string) or
+                         as sequence.
                        - ``copy`` is a boolean that defaults to ``True`` and indicates whether
                          to process on a copy of the document's tree object.
                        - ``name`` can be used to identify a transformation.
+                       - ``result_object`` sets the transformation's attribute that is returned as
+                         result. Dot-notation lookup (e.g. ``context.target``) is implemented. Per
+                         default the transformation root is returned.
                        - ``traversal_order`` sets the default traversal order for rule evaluations
                          and itself defaults to depth first, left to right, to to bottom. See
                          :ref:`traversal_strategies` for possible values.
