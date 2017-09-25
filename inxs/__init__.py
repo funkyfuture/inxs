@@ -392,11 +392,15 @@ class Transformation:
     __slots__ = ('config', 'steps', 'states')
 
     config_defaults = {
+        'common_rule_conditions': None,
         'context': {},
         'copy': True,
+        'name': None,
+        'result_object': None,
         'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
     }
-    """ The default :term:`configuration` values. """
+    """ The default :term:`configuration` values. Changing members on an instance actually affects
+        the class unless a copy of this mapping as copied and bound as instance attribute. """
 
     traversers = {
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP:
@@ -409,9 +413,9 @@ class Transformation:
     def __init__(self, *steps, **config):
         dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
         self.steps = _flatten_sequence(steps)
-        self._expand_rules(config)
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
+        self._expand_rules(self.config.common_rule_conditions)
         self.states = None
 
     @property
@@ -419,8 +423,7 @@ class Transformation:
         """ The ``name`` member of the transformation's :term:`configuration`. """
         return getattr(self.config, 'name', None)
 
-    def _expand_rules(self, config):
-        common_rule_conditions = config.pop('common_rule_conditions', None)
+    def _expand_rules(self, common_rule_conditions):
         if common_rule_conditions is None:
             return
 
@@ -493,7 +496,7 @@ class Transformation:
             self.states.tree = transformation_root.getroottree()
             self.states.root = transformation_root
 
-        if getattr(self.config, 'result_object', None) is None:
+        if self.config.result_object is None:
             dbg("Setting result_object to 'root'.")
             self.config.result_object = 'root'
             self.states.__config_result_object_is_none__ = True
