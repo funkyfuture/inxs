@@ -1,5 +1,6 @@
 flake8
 pytest
+pytest-cov
 Sphinx
 sphinx_rtd_theme
 tox
