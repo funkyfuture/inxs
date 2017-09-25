@@ -9,7 +9,7 @@ from inxs import lib, Ref, Rule, Transformation
 
 def test_clear_attributes():
     element = etree.Element('root', {'foo': 'bar'})
-    lib.clear_attributes(element)
+    lib.clear_attributes(element, None)
     assert element.attrib == {}
 
 
@@ -26,13 +26,13 @@ def test_set_localname(ns, expected):
         kwargs = {}
     element = builder.ElementMaker(**kwargs).karl()
 
-    lib.set_localname('rosa')(element)
+    lib.set_localname('rosa')(element, None)
     assert etree.QName(element).text == expected
 
 
 def test_strip_attributes():
     element = etree.Element('root', {'a': 'a', 'b': 'b'})
-    lib.strip_attributes('b')(element)
+    lib.strip_attributes('b')(element, None)
     assert element.attrib == {'a': 'a'}
 
 

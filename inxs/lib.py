@@ -8,6 +8,9 @@ functional to you, it doesn't need to be polished at that point.
 """
 
 
+# TODO indicate use area in function's docstrings; and whether they return something
+
+
 import logging
 from typing import Callable
 
@@ -42,27 +45,30 @@ def append_to_list(name):
     """
     def handler(context, previous_result):
         getattr(context, name).append(previous_result)
+        return previous_result
     return handler
 
 
 @export
-def cleanup_namespaces(root):
+def cleanup_namespaces(root, previous_result):
     """ Cleanup the namespaces of the root element. This should always be used at the end of a
         transformation when elements' namespaces have been changed.
     """
     etree.cleanup_namespaces(root)
+    return previous_result
 
 
 @export
-def clear_attributes(element):
+def clear_attributes(element, previous_result):
     """ Deletes all attributes of an element. """
     element.attrib.clear()
+    return previous_result
 
 
 @export
 def concatenate(*parts):
     """ Concatenate the given parts which may be strings or callables returning such. """
-    def evaluator(transformation) -> str:
+    def handler(transformation) -> str:
         result = ''
         for part in parts:
             if callable(part):
@@ -73,21 +79,25 @@ def concatenate(*parts):
                 raise RuntimeError('Unhandled type: {}'.format(type(part)))
             result += _part
         return result
-    return evaluator
+    return handler
 
 
 @export
-def debug_dump_document(tree):
+def debug_dump_document(name='tree'):
     """ Dumps the current state of the XML document to the log at info level. """
-    nfo(etree.tostring(tree))
+    def handler(transformation):
+        nfo(etree.tostring(transformation._available_symbols[name]))
+        return transformation.states.previous_result
+    return handler
 
 
 @export
 def debug_message(msg):
     """ Logs the provided message at info level. """
-    def evaluator():
+    def handler(previous_result):
         nfo(msg)
-    return evaluator
+        return previous_result
+    return handler
 
 
 @export
@@ -97,6 +107,7 @@ def debug_symbols(*names):
     def handler(transformation):
         for name in names:
             nfo(transformation._available_symbols[name])
+        return transformation.states.previous_result
     return handler
 
 
@@ -184,8 +195,9 @@ def init_elementmaker(name: str = 'e', **kwargs):
     if 'namespace' in kwargs and 'nsmap' not in kwargs:
         kwargs['nsmap'] = {None: kwargs['namespace']}
 
-    def wrapped(context):
+    def wrapped(context, previous_result):
         setattr(context, name, builder.ElementMaker(**kwargs))
+        return previous_result
     return wrapped
 
 
@@ -208,6 +220,7 @@ def put_variable(name):
     """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
     def handler(context, previous_result):
         setattr(context, name, previous_result)
+        return previous_result
     return handler
 
 
@@ -223,6 +236,7 @@ def remove_elements(references, keep_children=False, clear_ref=True):
             remove_element(element, keep_children=keep_children)
         if clear_ref:
             elements.clear()
+        return transformation.states.previous_result
     return handler
 
 
@@ -246,52 +260,57 @@ def resolve_xpath_to_element(*names):
                 setattr(context, name, resolved_elements[0])
             else:
                 raise RuntimeError('More than one element matched {}'.format(xpath))
+        return transformation.states.previous_result
     return resolver
 
 
 @export
 def set_localname(name):
     """ Sets the element's localname to ``name``. """
-    def handler(element):
+    def handler(element, previous_result):
         namespace = etree.QName(element).namespace
         if namespace is None:
             qname = etree.QName(name)
         else:
             qname = etree.QName(namespace, name)
         element.tag = qname.text
+        return previous_result
     return handler
 
 
 @export
 def set_text(text):
     """ Sets the element's text to the one provided as ``text``."""
-    def handler(element):
+    def handler(element, previous_result):
         element.text = text
+        return previous_result
     return handler
 
 
 @export
-def sorter(name: str, key: Callable):
+def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
     """ Sorts the object referenced by ``name`` in the :term:`context` using ``key`` as
         :term:`key function`.
     """
-    def wrapped(context):
+    def handler(context):
         return sorted(getattr(context, name), key=key)
-    return wrapped
+    return handler
 
 
 @export
 def strip_attributes(*names):
     """ Strips all attributes with the keys provided as ``names`` from the element. """
-    def handler(element):
+    def handler(element, previous_result):
         for name in names:
             element.attrib.pop(name, None)
+        return previous_result
     return handler
 
 
 @export
-def strip_namespace(element):
+def strip_namespace(element, previous_result):
     """ Removes the namespace from the element.
         When used, :func:`cleanup_namespaces` should be applied at the end of the transformation.
     """
     element.tag = etree.QName(element).localname
+    return previous_result

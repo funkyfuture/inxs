@@ -63,7 +63,7 @@ def test_attributes_re_key():
                                 '<item2 default-value="y"/><item3/></root>')
     transformation = Transformation(
         Rule({re.compile('default-'): None},
-             (lib.debug_symbols('element'),  # FIXME
+             (lib.debug_symbols('element'),
                  lib.get_localname, lib.append_to_list('result'))),
         context={'result': []}, result_object='context.result'
     )
