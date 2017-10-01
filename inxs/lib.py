@@ -190,6 +190,15 @@ def get_text(element):
 
 
 @export
+def get_variable(name):
+    """ Gets the object referenced as ``name`` from the :term:`context`. It is then available as
+        symbol ``previous_result``. """
+    def handler(context):
+        return dot_lookup(context, name)
+    return handler
+
+
+@export
 def has_attributes(element, _):
     """ Returns ``True`` if the element has attributes. """
     return bool(element.attrib)
@@ -256,11 +265,19 @@ def pop_attribute(name):
 
 
 @export
-def put_variable(name):
+def put_variable(name, value=Ref('previous_result')):
     """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
-    def handler(context, previous_result):
-        setattr(context, name, previous_result)
-        return previous_result
+    # TODO optimize by returning specialized handlers
+    def handler(transformation):
+        if is_Ref(value):
+            _value = value(transformation)
+        elif callable(value):
+            _value = value()
+        else:
+            _value = value
+        # TODO dotlookup
+        setattr(transformation.context, name, _value)
+        return transformation.states.previous_result
     return handler
 
 
@@ -354,6 +371,13 @@ def strip_namespace(element, previous_result):
     """
     element.tag = etree.QName(element).localname
     return previous_result
+
+
+@export
+def sub(*args, **kwargs):
+    """ A wrapper around :func:`inxs.lxml_utils.subelement` for usage as
+        :term:`handler function`. """
+    return f(lxml_utils.subelement, *args, **kwargs)
 
 
 @export

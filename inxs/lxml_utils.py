@@ -14,7 +14,8 @@ def is_root_element(element: etree._Element) -> bool:
 
 def merge_nodes(src: etree._Element, dst: etree._Element):
     """ Merges the node ``src`` including their subelements to ``dst``. The
-        Nodes are considered as equal - and thus merged - if their fully qualified names are identical.
+        Nodes are considered as equal - and thus merged - if their fully qualified names are
+        identical.
         Different matching and merging strategies will be added as needed.
     """
     def child_with_qname(element: etree._Element, qname: etree.QName):
@@ -45,3 +46,10 @@ def remove_element(element: etree._Element, keep_children=False) -> None:
             element.addprevious(child)
     element.getparent().remove(element)
 
+
+def subelement(element, *args, text=None, **kwargs):
+    """ A convenience wrapper around :func:`lxml.etree.SubElement` that takes an additional
+        keyword argument ``text`` to set the created element's text. """
+    result = etree.SubElement(element, *args, **kwargs)
+    result.text = text
+    return result
