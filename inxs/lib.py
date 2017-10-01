@@ -139,13 +139,28 @@ def drop_siblings(left_or_right):
 
 
 @export
-def f(func, ref, *args, **kwargs):
+def f(func, *args, **kwargs):
     """ Wraps the callable ``func`` which will be called as ``func(<ref>, *args, **kwargs)`` where
         ``<ref>`` is the object that is currently referenced by the name given as ``ref`` argument
         from :attr:`inxs.Transformation._available_symbols`. """
     def wrapper(transformation):
-        arg = transformation._available_symbols[ref]
-        return func(arg, *args, **kwargs)
+        if isinstance(func, str):  # FIXME? rather Ref
+            _func = transformation._available_symbols[func]
+        elif callable(func):
+            _func = func
+        _args = ()
+        for arg in args:
+            if hasattr(arg, '_this_is_a_Ref_resolver_'):
+                _args += (arg(transformation),)
+            else:
+                _args += (arg,)
+        _kwargs = {}
+        for key, value in kwargs.items():
+            if hasattr(value, '_this_is_a_Ref_resolver_'):
+                _kwargs[key] = value(transformation)
+            else:
+                _kwargs[key] = value
+        return _func(*_args, **_kwargs)
     return wrapper
 
 

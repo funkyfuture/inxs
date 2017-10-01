@@ -64,7 +64,9 @@ class SkipToNextElement(FlowControl):
         builtin ``continue`` in iterations.
     """
 
+
 # helpers
+
 
 AttributesConditionType = Dict[Union[str, Pattern], Union[str, Pattern, None]]
 
@@ -259,6 +261,7 @@ def Ref(name: str) -> Callable:
     def resolver(transformation) -> AnyType:
         dbg('Resolving {}.'.format(name))
         return transformation._available_symbols[name]
+    resolver._this_is_a_Ref_resolver_ = None
     return resolver
 
 

@@ -40,9 +40,9 @@ def test_subtransformation():
         Rule('*', lib.set_localname('pablo'))
     )
     transformation = Transformation(
-        lib.f(id, 'root'), lib.put_variable('source_id'),
+        lib.f(id, Ref('root')), lib.put_variable('source_id'),
         subtransformation,
-        lib.f(id, 'root'), lib.put_variable('result_id'),
+        lib.f(id, Ref('root')), lib.put_variable('result_id'),
         lib.debug_symbols('source_id', 'result_id'),
         Rule(Not(If(Ref('source_id'), operator.eq, Ref('result_id'))),
              (lib.debug_message('NO!'), lib.debug_symbols('root'),
