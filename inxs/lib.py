@@ -145,7 +145,6 @@ def drop_siblings(left_or_right):
 
 @export
 def f(func, *args, **kwargs):
-    # FIXME docs
     """ Wraps the callable ``func`` which will be called as ``func(*args, **kwargs)``, the function
         and any argument can be given as :func:`inxs.Ref`. """
     def wrapper(transformation):
@@ -267,18 +266,42 @@ def pop_attribute(name):
 @export
 def put_variable(name, value=Ref('previous_result')):
     """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
-    # TODO optimize by returning specialized handlers
-    def handler(transformation):
-        if is_Ref(value):
-            _value = value(transformation)
-        elif callable(value):
-            _value = value()
-        else:
-            _value = value
-        # TODO dotlookup
-        setattr(transformation.context, name, _value)
+    def callable_handler(transformation):
+        setattr(transformation.context, name, value())
         return transformation.states.previous_result
-    return handler
+
+    def callable_handler_dot_lookup(transformation):
+        setattr(dot_lookup(transformation.context, name), value())
+        return transformation.states.previous_result
+
+    def ref_handler(transformation):
+        setattr(transformation.context, name, value(transformation))
+        return transformation.states.previous_result
+
+    def ref_handler_dot_lookup(transformation):
+        setattr(dot_lookup(transformation.context, name), value(transformation))
+        return transformation.states.previous_result
+
+    def simple_handler(transformation):
+        setattr(transformation.context, name, value)
+        return transformation.states.previous_result
+
+    def simple_handler_dot_lookup(transformation):
+        setattr(dot_lookup(transformation.context, name), value)
+        return transformation.states.previous_result
+
+    if is_Ref(value):
+        if '.' in name:
+            return ref_handler_dot_lookup
+        return ref_handler
+    elif callable(value):
+        if '.' in name:
+            return callable_handler_dot_lookup
+        return callable_handler
+    elif '.' in name:
+        return simple_handler_dot_lookup
+    else:
+        return simple_handler
 
 
 @export

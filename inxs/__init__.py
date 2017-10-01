@@ -268,12 +268,22 @@ def Ref(name: str) -> Callable:
         ``name``. This allows to reference dynamic values in :term:`transformation steps` and
         :class:`Rule` s.
     """
-    def resolver(transformation) -> AnyType:
-        # TODO dotlookup
+    def simple_resolver(transformation) -> AnyType:
         dbg('Resolving {}.'.format(name))
         return transformation._available_symbols[name]
-    setattr(resolver, REF_IDENTIFYING_ATTRIBUTE, None)
-    return resolver
+    setattr(simple_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
+
+    def dot_resolver(transformation) -> AnyType:
+        token = name.split('.')
+        obj = transformation._available_symbols[token[0]]
+        for _name in token[1:]:
+            obj = getattr(obj, _name)
+        return obj
+    setattr(dot_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
+
+    if '.' in name:
+        return dot_resolver
+    return simple_resolver
 
 
 def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
