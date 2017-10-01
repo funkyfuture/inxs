@@ -1,4 +1,5 @@
 """ Some helper functions for ``lxml`` objects. """
+from copy import deepcopy
 
 from lxml import etree
 
@@ -11,6 +12,30 @@ def is_root_element(element: etree._Element) -> bool:
     return element is element.getroottree().getroot()
 
 
+def merge_nodes(src: etree._Element, dst: etree._Element):
+    """ Merges the node ``src`` including their subelements to ``dst``. The
+        Nodes are considered as equal - and thus merged - if their fully qualified names are identical.
+        Different matching and merging strategies will be added as needed.
+    """
+    def child_with_qname(element: etree._Element, qname: etree.QName):
+        for child in element.iterchildren(qname.text):
+            if etree.QName(child).text == qname.text:
+                return child
+
+    merged_elements = set()
+
+    for child in dst.iterchildren():
+        twin = child_with_qname(src, etree.QName(child))
+        if twin is not None:
+            merge_nodes(twin, child)
+            merged_elements.add(twin)
+
+    for child in src.iterchildren():
+        if child in merged_elements:
+            continue
+        dst.append(deepcopy(child))
+
+
 def remove_element(element: etree._Element, keep_children=False) -> None:
     """ Removes the given element from its tree. Unless ``keep_children`` is passed as ``True``,
         its children vanish with it into void.
@@ -19,3 +44,4 @@ def remove_element(element: etree._Element, keep_children=False) -> None:
         for child in element:
             element.addprevious(child)
     element.getparent().remove(element)
+

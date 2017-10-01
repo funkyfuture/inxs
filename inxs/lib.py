@@ -16,8 +16,7 @@ from typing import Callable
 
 from lxml import builder, etree
 
-from inxs.lxml_utils import is_root_element, remove_element
-
+from inxs import lxml_utils
 
 # helpers
 
@@ -127,11 +126,11 @@ def drop_siblings(left_or_right):
         raise RuntimeError("'left_or_right' must be 'left' or …")
 
     def processor(element):
-        if is_root_element(element):
+        if lxml_utils.is_root_element(element):
             return
 
         for sibling in element.itersiblings(preceding=preceding):
-            remove_element(sibling)
+            lxml_utils.remove_element(sibling)
 
         parent = element.getparent()
         if parent is not None:
@@ -230,6 +229,20 @@ def lowercase(previous_result):
 
 
 @export
+def merge(src='previous_result', dst='root'):
+    """ A wrapper around :func:`inxs.lxml_util.merge_nodes` that passes the objects
+        referenced by ``src`` and ``dst``.
+    """
+    def handler(transformation):
+        _src = transformation._available_symbols[src]
+        _dst = transformation._available_symbols[dst]
+        assert etree.QName(_src).text == etree.QName(_dst).text, \
+            f'{etree.QName(_src).text} != {etree.QName(_dst).text}'
+        lxml_utils.merge_nodes(_src, _dst)
+    return handler
+
+
+@export
 def pop_attribute(name):
     """ Pops the element's attribute named ``name``. """
     def handler(element):
@@ -255,7 +268,7 @@ def remove_elements(references, keep_children=False, clear_ref=True):
     def handler(transformation):
         elements = transformation._available_symbols[references]
         for element in elements:
-            remove_element(element, keep_children=keep_children)
+            lxml_utils.remove_element(element, keep_children=keep_children)
         if clear_ref:
             elements.clear()
         return transformation.states.previous_result

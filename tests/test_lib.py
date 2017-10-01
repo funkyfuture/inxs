@@ -5,6 +5,7 @@ from pytest import mark
 
 
 from inxs import lib, Ref, Rule, Transformation
+from tests import equal_subtree
 
 
 def test_clear_attributes():
@@ -16,6 +17,14 @@ def test_clear_attributes():
 def test_concatenate():
     transformation = SimpleNamespace(_available_symbols={'foo': 'bar'})
     assert lib.concatenate('foo', Ref('foo'))(transformation) == 'foobar'
+
+
+def test_merge():
+    source = etree.fromstring('<root><a><bb/></a><b/></root>')
+    destination = etree.fromstring('<root><a><aa/></a><b/><c/></root>')
+    expected = etree.fromstring('<root><a><aa/><bb/></a><b/><c/></root>')
+    transformation = Transformation(lib.merge('source'), context={'source': source})
+    equal_subtree(transformation(destination), expected)
 
 
 @mark.parametrize('ns,expected', ((None, 'rosa'), ('spartakus', '{spartakus}rosa')))
