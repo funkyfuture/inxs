@@ -48,7 +48,7 @@ def append(name):
         ``name`` in the :term:`context` namespace.
     """
     def handler(context, previous_result):
-        getattr(context, name).append(previous_result)
+        dot_lookup(context, name).append(previous_result)
         return previous_result
     return handler
 

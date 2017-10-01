@@ -99,7 +99,15 @@ def _condition_factory(condition: Union[str, AttributesConditionType, Callable])
         return condition
 
 
-def _flatten_sequence(seq):
+def dot_lookup(obj: AnyType, name: str):
+    """ Looks up the attribute ``name`` from ``obj`` considering nested attributes that are
+        separated by a ``.`` """
+    for _name in name.split('.'):
+        obj = getattr(obj, _name)
+    return obj
+
+
+def _flatten_sequence(seq: Sequence):
     result = []
     for item in seq:
         if isinstance(item, Sequence) and not isinstance(item, str):
@@ -473,7 +481,7 @@ class Transformation:
                 dbg("Aborting due to 'AbortTransformation'.")
                 break
 
-        result = self._get_object_by_name(self.config.result_object)
+        result = dot_lookup(self, self.config.result_object)
         self._finalize_transformation()
         return result
 
@@ -603,12 +611,6 @@ class Transformation:
             'xpath_evaluator': self.states.xpath_evaluator
         }
         return ChainMap(guaranteed_symbols, vars(self.states.context), vars(self.config))
-
-    def _get_object_by_name(self, fqn) -> AnyType:
-        namespace = self
-        for name in fqn.split('.'):
-            namespace = getattr(namespace, name)
-        return namespace
 
     # aliases that are supposed to be broken when the transformation isn't processing
 
