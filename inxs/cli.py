@@ -29,9 +29,7 @@ def parse_args():
 
 
 def setup_logging(verbosity: int):
-    level = {0: logging.WARNING,
-             1: logging.INFO,
-             2: logging.DEBUG}[verbosity],
+    level = ('WARNING', 'INFO', 'DEBUG')[verbosity]
     console_log_handler = logging.StreamHandler(sys.stdout)
     console_log_handler.setLevel(level)
     logger.addHandler(console_log_handler)
@@ -70,7 +68,7 @@ def get_transformation(location: str):
     for instance in transformation_objects.values():
         if instance.name == transformation_name:
             dbg(f"Selected transformation named '{transformation_name}' from module "
-                 "as transformation.")
+                f"as transformation.")
             return instance
 
     dbg(f"Selected symbol '{transformation_name}' from module as transformation.")
