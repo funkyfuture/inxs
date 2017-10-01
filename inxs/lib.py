@@ -16,7 +16,7 @@ from typing import Callable
 
 from lxml import builder, etree
 
-from inxs import lxml_utils
+from inxs import dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE
 
 # helpers
 
@@ -32,6 +32,11 @@ __all__ = []
 def export(func):
     __all__.append(func.__name__)
     return func
+
+
+@export
+def is_Ref(obj):
+    return hasattr(obj, REF_IDENTIFYING_ATTRIBUTE)
 
 
 # the actual lib
@@ -140,23 +145,23 @@ def drop_siblings(left_or_right):
 
 @export
 def f(func, *args, **kwargs):
-    """ Wraps the callable ``func`` which will be called as ``func(<ref>, *args, **kwargs)`` where
-        ``<ref>`` is the object that is currently referenced by the name given as ``ref`` argument
-        from :attr:`inxs.Transformation._available_symbols`. """
+    # FIXME docs
+    """ Wraps the callable ``func`` which will be called as ``func(*args, **kwargs)``, the function
+        and any argument can be given as :func:`inxs.Ref`. """
     def wrapper(transformation):
-        if isinstance(func, str):  # FIXME? rather Ref
-            _func = transformation._available_symbols[func]
-        elif callable(func):
+        if is_Ref(func):
+            _func = func(transformation)
+        else:
             _func = func
         _args = ()
         for arg in args:
-            if hasattr(arg, '_this_is_a_Ref_resolver_'):
+            if is_Ref(arg):
                 _args += (arg(transformation),)
             else:
                 _args += (arg,)
         _kwargs = {}
         for key, value in kwargs.items():
-            if hasattr(value, '_this_is_a_Ref_resolver_'):
+            if is_Ref(value):
                 _kwargs[key] = value(transformation)
             else:
                 _kwargs[key] = value

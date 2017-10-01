@@ -15,6 +15,8 @@ from lxml import etree
 
 __version__ = '0.1b1'
 
+REF_IDENTIFYING_ATTRIBUTE = '_this_is_a_Ref_resolver_'
+
 TRAVERSE_DEPTH_FIRST = True << 0
 TRAVERSE_WIDTH_FIRST = False << 0
 TRAVERSE_LEFT_TO_RIGHT = True << 1
@@ -259,9 +261,10 @@ def Ref(name: str) -> Callable:
         :class:`Rule` s.
     """
     def resolver(transformation) -> AnyType:
+        # TODO dotlookup
         dbg('Resolving {}.'.format(name))
         return transformation._available_symbols[name]
-    resolver._this_is_a_Ref_resolver_ = None
+    setattr(resolver, REF_IDENTIFYING_ATTRIBUTE, None)
     return resolver
 
 
