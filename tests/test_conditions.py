@@ -64,7 +64,7 @@ def test_attributes_re_key():
     transformation = Transformation(
         Rule({re.compile('default-'): None},
              (lib.debug_symbols('element'),
-                 lib.get_localname, lib.append_to_list('result'))),
+                 lib.get_localname, lib.append('result'))),
         context={'result': []}, result_object='context.result'
     )
     assert transformation(document) == ['item1', 'item2']
@@ -73,7 +73,7 @@ def test_attributes_re_key():
 def test_common_conditions():
     document = etree.fromstring('<root><a href="foo"/><a id="bar"/><a href="peng"/></root>')
     transformation = Transformation(
-        Rule('*', (lib.get_attribute('href'), lib.append_to_list('references'))),
+        Rule('*', (lib.get_attribute('href'), lib.append('references'))),
         common_rule_conditions={'href': None},
         context={'references': []}, result_object='context.references'
     )
@@ -99,7 +99,7 @@ def test_If():
 
 def test_is_root_condition():
     transformation = Transformation(
-        Rule(('a', '/'), lib.append_to_list('basket')),
+        Rule(('a', '/'), lib.append('basket')),
         result_object='context.basket', context={'basket': []}
     )
     result = transformation(etree.fromstring('<a><a/></a>'))

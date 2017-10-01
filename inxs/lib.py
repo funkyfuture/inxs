@@ -39,9 +39,9 @@ def export(func):
 
 
 @export
-def append_to_list(name):
-    """ Appends the result of the previous :term:`handler function` to the list referenced by
-        ``name`` on the :term:`context`.
+def append(name):
+    """ Appends the result of the previous :term:`handler function` to the object referenced by
+        ``name`` in the :term:`context` namespace.
     """
     def handler(context, previous_result):
         getattr(context, name).append(previous_result)
