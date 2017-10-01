@@ -21,6 +21,7 @@ from inxs.lib import dbg, logger, nfo
 def parse_args():
     parser = ArgumentParser()
 
+    parser.add_argument('--pretty', action='store_true', default=False)
     parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('transformation')
     parser.add_argument('target')
@@ -82,8 +83,14 @@ def apply_transformation(transformation: Transformation, target: str):
     dbg('Applying transformation.')
     root = transformation(document.getroot())
     document._setroot(root)
-    document.write(target,
-                   encoding='utf-8',  # TODO obtain options from source
+    return document
+
+
+def write_file(document, args):
+    document.write(args.target,
+                   pretty_print=args.pretty,
+                   # TODO obtain options from source:
+                   encoding='utf-8',
                    xml_declaration=True)
     dbg('Wrote result back to file.')
 
@@ -95,7 +102,8 @@ def main():
         setup_logging(args.verbose)
         dbg(f'Invoked with args: {args}')
         transformation = get_transformation(args.transformation)
-        apply_transformation(transformation, args.target)
+        result = apply_transformation(transformation, args.target)
+        write_file(result, args)
     except Exception as e:
         print_exc(e)
         raise SystemExit(2)
