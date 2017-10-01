@@ -84,7 +84,8 @@ def concatenate(*parts):
 
 @export
 def debug_dump_document(name='tree'):
-    """ Dumps the current state of the XML document to the log at info level. """
+    """ Dumps all contents of the element refrenced by ``name`` from the
+        :attr:`inxs.Transformation._available_symbols` to the log at info level. """
     def handler(transformation):
         nfo(etree.tostring(transformation._available_symbols[name]))
         return transformation.states.previous_result
