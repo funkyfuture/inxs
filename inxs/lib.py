@@ -179,6 +179,12 @@ def get_localname(element):
 
 
 @export
+def get_text(element):
+    """ Returns the text of the matched element. """
+    return element.text
+
+
+@export
 def has_attributes(element, _):
     """ Returns ``True`` if the element has attributes. """
     return bool(element.attrib)
@@ -329,3 +335,11 @@ def strip_namespace(element, previous_result):
     """
     element.tag = etree.QName(element).localname
     return previous_result
+
+
+@export
+def text_is(text):
+    """ Tests whether the evaluated element's text matches ``text``. """
+    def evaluator(element, _):
+        return element.text == text
+    return evaluator
