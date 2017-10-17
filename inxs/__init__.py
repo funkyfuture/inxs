@@ -607,6 +607,7 @@ class Transformation:
             'config': self.config,
             'context': self.states.context,
             'element': self.states.current_element,
+            'nsmap': self.states.root.nsmap,
             'previous_result': self.states.previous_result,
             'root': self.states.root,
             'transformation': self,
