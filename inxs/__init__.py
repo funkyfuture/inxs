@@ -2,6 +2,7 @@ from collections import ChainMap
 from copy import deepcopy
 from functools import lru_cache
 import logging
+from os import getenv
 from types import SimpleNamespace
 from typing import Callable, Dict, Iterator, Mapping, Pattern, Sequence, Union
 from typing import Any as AnyType
@@ -14,6 +15,11 @@ from lxml import etree
 
 
 __version__ = '0.1b1'
+
+# TODO document
+HANDLER_CACHE_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
+if HANDLER_CACHE_SIZE is not None:
+    HANDLER_CACHE_SIZE = int(HANDLER_CACHE_SIZE)
 
 REF_IDENTIFYING_ATTRIBUTE = '_this_is_a_Ref_resolver_'
 
@@ -132,6 +138,9 @@ def _is_root_condition(element, transformation):
     return element is transformation.root
 
 
+singleton_handler = lru_cache(HANDLER_CACHE_SIZE)
+
+
 # rules definition
 
 
@@ -168,6 +177,7 @@ def Not(*conditions: Sequence[Callable]) -> Callable:
     return evaluator
 
 
+@singleton_handler
 def HasNamespace(namespace: str) -> Callable:
     """ Returns a callable that tests an element for the given tag namespace. """
     def evaluator(element: etree._Element, _) -> bool:
@@ -175,6 +185,7 @@ def HasNamespace(namespace: str) -> Callable:
     return evaluator
 
 
+@singleton_handler
 def HasLocalname(tag: str) -> Callable:
     """ Returns a callable that tests an element for the given local tag name. """
     def evaluator(element: etree._Element, _) -> bool:
@@ -182,6 +193,7 @@ def HasLocalname(tag: str) -> Callable:
     return evaluator
 
 
+@singleton_handler
 def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
     """ Returns a callable that tests an element for the given XPath expression (whether the
         evaluation result on the transformation root contains it) . If the ``xpath`` argument is a
@@ -261,6 +273,7 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
     return evaluator
 
 
+@singleton_handler
 def Ref(name: str) -> Callable:
     """ Returns a callable that can be used for value resolution in a condition test or
         :term:`handler function` that supports that. The value will be looked up during the

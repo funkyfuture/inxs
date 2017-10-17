@@ -17,7 +17,7 @@ from typing import Callable
 
 from lxml import builder, etree
 
-from inxs import dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE
+from inxs import dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE, singleton_handler
 
 # helpers
 
@@ -44,6 +44,7 @@ def is_Ref(obj):
 
 
 @export
+@singleton_handler
 def append(name):
     """ Appends the result of the previous :term:`handler function` to the object referenced by
         ``name`` in the :term:`context` namespace.
@@ -73,6 +74,7 @@ def clear_attributes(element, previous_result):
 
 
 @export
+@singleton_handler
 def concatenate(*parts):
     """ Concatenate the given parts which may be strings or callables returning such. """
     def handler(transformation) -> str:
@@ -90,6 +92,7 @@ def concatenate(*parts):
 
 
 @export
+@singleton_handler
 def debug_dump_document(name='tree'):
     """ Dumps all contents of the element refrenced by ``name`` from the
         :attr:`inxs.Transformation._available_symbols` to the log at info level. """
@@ -100,6 +103,7 @@ def debug_dump_document(name='tree'):
 
 
 @export
+@singleton_handler
 def debug_message(msg):
     """ Logs the provided message at info level. """
     def handler(previous_result):
@@ -109,6 +113,7 @@ def debug_message(msg):
 
 
 @export
+@singleton_handler
 def debug_symbols(*names):
     """ Logs the representation strings of the objects referenced by ``names`` in
         :attr:`inxs.Transformation._available_symbols` at info level. """
@@ -172,6 +177,7 @@ def f(func, *args, **kwargs):
 
 
 @export
+@singleton_handler
 def get_attribute(name):
     """ Gets the value of the element's attribute named ``name``. """
     def evaluator(element):
@@ -192,6 +198,7 @@ def get_text(element):
 
 
 @export
+@singleton_handler
 def get_variable(name):
     """ Gets the object referenced as ``name`` from the :term:`context`. It is then available as
         symbol ``previous_result``. """
@@ -269,6 +276,7 @@ def make_element(tag, namespace_s=None):
 
 
 @export
+@singleton_handler
 def merge(src='previous_result', dst='root'):
     """ A wrapper around :func:`inxs.lxml_util.merge_nodes` that passes the objects
         referenced by ``src`` and ``dst``.
@@ -283,6 +291,7 @@ def merge(src='previous_result', dst='root'):
 
 
 @export
+@singleton_handler
 def pop_attribute(name):
     """ Pops the element's attribute named ``name``. """
     def handler(element):
@@ -291,6 +300,7 @@ def pop_attribute(name):
 
 
 @export
+@singleton_handler
 def put_variable(name, value=Ref('previous_result')):
     """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
     def callable_handler(transformation):
@@ -332,6 +342,7 @@ def put_variable(name, value=Ref('previous_result')):
 
 
 @export
+@singleton_handler
 def remove_elements(references, keep_children=False, clear_ref=True):
     """ Removes all elements from the document that are referenced in a list that is available
         as ``references``. ``keep_children`` is passed to :func:`inxs.lxml_utils.remove_element`.
@@ -348,6 +359,7 @@ def remove_elements(references, keep_children=False, clear_ref=True):
 
 
 @export
+@singleton_handler
 def resolve_xpath_to_element(*names):
     """ Resolves the objects from the context (which are supposed to be XPath expressions)
         referenced by ``names`` with the *one* element that the XPaths yield or ``None``. This is
@@ -372,6 +384,7 @@ def resolve_xpath_to_element(*names):
 
 
 @export
+@singleton_handler
 def set_localname(name):
     """ Sets the element's localname to ``name``. """
     def handler(element, previous_result):
@@ -386,6 +399,7 @@ def set_localname(name):
 
 
 @export
+@singleton_handler
 def set_text(text):
     """ Sets the element's text to the one provided as ``text``."""
     def handler(element, previous_result):
@@ -395,6 +409,7 @@ def set_text(text):
 
 
 @export
+@singleton_handler
 def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
     """ Sorts the object referenced by ``name`` in the :term:`context` using ``key`` as
         :term:`key function`.
@@ -405,6 +420,7 @@ def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
 
 
 @export
+@singleton_handler
 def strip_attributes(*names):
     """ Strips all attributes with the keys provided as ``names`` from the element. """
     def handler(element, previous_result):
@@ -431,7 +447,8 @@ def sub(*args, **kwargs):
 
 
 @export
-def text_is(text):
+@singleton_handler
+def text_equals(text):
     """ Tests whether the evaluated element's text matches ``text``. """
     def evaluator(element, _):
         return element.text == text

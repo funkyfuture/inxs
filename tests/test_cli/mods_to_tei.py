@@ -72,7 +72,7 @@ def get_publication(element, publicationStmt):
 
 
 mods_name = Transformation(
-    Once(('roleTerm', {'type': 'text'}, lib.text_is('author')),
+    Once(('roleTerm', {'type': 'text'}, lib.text_equals('author')),
          (lib.make_element('author', TEI_NAMESPACE), as_result,
           lib.put_variable('role', 'author'))),
 
