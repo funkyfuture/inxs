@@ -362,6 +362,13 @@ class Rule:
         self.traversal_order = traversal_order
 
 
+class Once(Rule):
+    """ This is a variant of :class:`Rule` that is only applied on the first match. """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.handlers += (AbortRule,)
+
+
 # transformation
 
 
