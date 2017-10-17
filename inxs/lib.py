@@ -11,6 +11,7 @@ functional to you, it doesn't need to be polished at that point.
 # TODO indicate use area in function's docstrings; and whether they return something
 
 
+from copy import deepcopy
 import logging
 from typing import Callable
 
@@ -48,6 +49,8 @@ def append(name):
         ``name`` in the :term:`context` namespace.
     """
     def handler(context, previous_result):
+        if isinstance(previous_result, etree._Element):
+            previous_result = deepcopy(previous_result)
         dot_lookup(context, name).append(previous_result)
         return previous_result
     return handler
