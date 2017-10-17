@@ -274,6 +274,7 @@ def Ref(name: str) -> Callable:
     setattr(simple_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
     def dot_resolver(transformation) -> AnyType:
+        dbg('Resolving {}.'.format(name))
         token = name.split('.')
         obj = transformation._available_symbols[token[0]]
         for _name in token[1:]:
@@ -281,9 +282,7 @@ def Ref(name: str) -> Callable:
         return obj
     setattr(dot_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
-    if '.' in name:
-        return dot_resolver
-    return simple_resolver
+    return dot_resolver if '.' in name else simple_resolver
 
 
 def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
@@ -600,10 +599,10 @@ class Transformation:
             - ``config`` - The :term:`configuration` namespace object.
             - ``context`` - The :term:`context` namespace object.
             - ``element`` - The element that matched a :class:`Rule`'s conditions or ``None`` in
-              case of :term:`simple transfotmation steps`.
+              case of simple :term:`transformation steps`.
             - ``previous_result`` - The result that was returned by the previously evaluated
               handler function.
-            - ``root`` - The root element of the processed (sub-)document a.k.a tranformation root.
+            - ``root`` - The root element of the processed (sub-)document a.k.a transformation root.
             - ``transformation`` - The calling :class:`Transformation` instance.
             - ``tree`` - The tree object of the processed document.
             - ``xpath_evaluator`` - The XPathEvaluator instance that is bound to the
