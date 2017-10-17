@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mets:mets xmlns:mets="http://www.loc.gov/METS/"
+           xmlns:mods="http://www.loc.gov/mods/v3"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:xlink="http://www.w3.org/1999/xlink"
+           xsi:schemaLocation="https://www.loc.gov/standards/mets/mets.xsd">
+  <mets:metsHdr CREATEDATE="2017-10-17T00:00:00" RECORDSTATUS="Incomplete">
+    <mets:agent ROLE="CREATOR" TYPE="INDIVIDUAL">
+      <mets:name>Frank Sachsenheim</mets:name>
+    </mets:agent>
+  </mets:metsHdr>
+  <mets:dmdSec ID="dmd001">
+    <mets:mdWrap MIMETYPE="text/xml" MDTYPE="MODS" LABEL="MODS Metadata">
+      <mets:xmlData>
+        <mods:mods xsi:schemaLocation="https://www.loc.gov/standards/mods/v3/mods-3-6.xsd">
+          <mods:titleInfo lang="ger">
+            <mods:nonSort>Das</mods:nonSort>
+            <mods:title>Manifest der kommunistischen Partei.</mods:title>
+            <mods:subTitle>
+              Gespenstergeschichten von Abweichungen.
+            </mods:subTitle>
+          </mods:titleInfo>
+          <mods:name type="personal">
+            <mods:namePart type="family">Marx</mods:namePart>
+            <mods:namePart type="given">Karl</mods:namePart>
+            <mods:displayForm>Karl Marx</mods:displayForm>
+            <mods:role>
+              <mods:roleTerm type="text">author</mods:roleTerm>
+            </mods:role>
+          </mods:name>
+          <mods:name type="personal">
+            <mods:namePart type="family">Engels</mods:namePart>
+            <mods:namePart type="given">Friedrich</mods:namePart>
+            <mods:displayForm>Friedrich Engels</mods:displayForm>
+            <mods:role>
+              <mods:roleTerm type="text">author</mods:roleTerm>
+            </mods:role>
+          </mods:name>
+          <mods:typeOfResource>text</mods:typeOfResource>
+          <mods:genre authority="marcgt">book</mods:genre>
+          <mods:originInfo>
+            <mods:place>
+              <mods:placeTerm type="code" authority="iso3166">gbr</mods:placeTerm>
+              <mods:placeTerm type="text">London</mods:placeTerm>
+            </mods:place>
+            <mods:publisher>Bildungs-Gesellschaft für Arbeiter</mods:publisher>
+            <mods:dateIssued>1848</mods:dateIssued>
+          </mods:originInfo>
+          <mods:language>
+            <mods:languageTerm type="code" authority="iso639-3">deu</mods:languageTerm>
+          </mods:language>
+          <mods:location>
+            <mods:physicalLocation>Bibliothek am Institut für Kritik</mods:physicalLocation>
+            <mods:shelfLocator>A1</mods:shelfLocator>
+          </mods:location>
+        </mods:mods>
+      </mets:xmlData>
+    </mets:mdWrap>
+  </mets:dmdSec>
+</mets:mets>

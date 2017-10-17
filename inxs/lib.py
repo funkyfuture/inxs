@@ -245,6 +245,30 @@ def lowercase(previous_result):
 
 
 @export
+def make_element(tag, namespace_s=None):
+    # FIXME
+    def handler(transformation, nsmap):
+        if is_Ref(tag):
+            _tag = tag(transformation)
+        else:
+            _tag = tag
+        if namespace_s is None:
+            _namespace_s = nsmap
+        elif is_Ref(namespace_s):
+            _namespace_s = namespace_s(transformation)
+        else:
+            _namespace_s = namespace_s
+        if isinstance(_namespace_s, str):
+            return etree.Element(_tag, nsmap={None: _namespace_s})
+        else:
+            if ':' in _tag:
+                prefix, _tag = _tag.split('.', 1)
+                _tag = '{' + _namespace_s[prefix] + '}' + _tag
+            return etree.Element(_tag, nsmap=_namespace_s)
+    return handler
+
+
+@export
 def merge(src='previous_result', dst='root'):
     """ A wrapper around :func:`inxs.lxml_util.merge_nodes` that passes the objects
         referenced by ``src`` and ``dst``.

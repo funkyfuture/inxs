@@ -1,6 +1,4 @@
-# TODO error handling
 # TODO documentation
-# TODO tests
 # TODO allow passing arguments
 
 

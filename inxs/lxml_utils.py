@@ -4,6 +4,11 @@ from copy import deepcopy
 from lxml import etree
 
 
+def find(element, path):
+    # FIXME
+    return element.find(path, namespaces=element.nsmap)
+
+
 def is_root_element(element: etree._Element) -> bool:
     """ Tests whether the given element is the root of the tree object.
         Not to be mixed up with the root element of a possible sub-document a transformation may

@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<teiHeader xmlns="http://www.tei-c.org/ns/1.0">
+  <fileDesc>
+    <sourceDesc>
+      <biblFull>
+        <publicationStmt>
+          <publisher>
+            <name>Bildungs-Gesellschaft für Arbeiter</name>
+          </publisher>
+          <pubPlace>London</pubPlace>
+          <date type="creation">1848</date>
+        </publicationStmt>
+        <titleStmt>
+          <title type="main">Das Manifest der kommunistischen Partei.</title>
+          <title type="sub">
+              Gespenstergeschichten von Abweichungen.</title>
+          <author>
+            <surname>Marx</surname>
+            <forename>Karl</forename>
+          </author>
+          <author>
+            <surname>Engels</surname>
+            <forename>Friedrich</forename>
+          </author>
+        </titleStmt>
+      </biblFull>
+      <msDesc>
+        <msIdentifier>
+          <repository>Bibliothek am Institut für Kritik</repository>
+          <idno type="shelfmark">A1</idno>
+        </msIdentifier>
+      </msDesc>
+    </sourceDesc>
+        <titleStmt>
+          <title type="main">Das Manifest der kommunistischen Partei.</title>
+          <title type="sub">
+              Gespenstergeschichten von Abweichungen.</title>
+          <author>
+            <surname>Marx</surname>
+            <forename>Karl</forename>
+          </author>
+          <author>
+            <surname>Engels</surname>
+            <forename>Friedrich</forename>
+          </author>
+        </titleStmt>
+  </fileDesc>
+  <encodingDesc/>
+  <profileDesc/>
+</teiHeader>
