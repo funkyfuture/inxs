@@ -4,13 +4,14 @@
 # TODO allow passing arguments
 
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from traceback import print_exc
 import importlib.util
 import logging
 from pathlib import Path
 from shutil import copy2 as copy_file
 import sys
+from typing import Sequence
 
 from lxml import etree
 
@@ -18,7 +19,7 @@ from inxs import Transformation
 from inxs.lib import dbg, logger, nfo
 
 
-def parse_args():
+def parse_args(args: Sequence[str]) -> Namespace:
     parser = ArgumentParser()
 
     parser.add_argument('--pretty', action='store_true', default=False)
@@ -26,10 +27,10 @@ def parse_args():
     parser.add_argument('transformation')
     parser.add_argument('target')
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
-def setup_logging(verbosity: int):
+def setup_logging(verbosity: int) -> None:
     level = ('WARNING', 'INFO', 'DEBUG')[verbosity]
     console_log_handler = logging.StreamHandler(sys.stdout)
     console_log_handler.setLevel(level)
@@ -37,7 +38,8 @@ def setup_logging(verbosity: int):
     logger.setLevel(level)
 
 
-def get_transformation(location: str):
+def get_transformation(location: str) -> Transformation:
+    # TODO allow use of contributed transformations
     if ':' in location:
         module_path, transformation_name = location.split(':')
     else:
@@ -76,7 +78,7 @@ def get_transformation(location: str):
     return transformation_objects[transformation_name]
 
 
-def apply_transformation(transformation: Transformation, target: str):
+def apply_transformation(transformation: Transformation, target: str) -> etree._ElementTree:
     document = etree.parse(target)
     copy_file(target, target + '.orig')
     dbg("Saved document backup with suffix '.orig'")
@@ -86,7 +88,7 @@ def apply_transformation(transformation: Transformation, target: str):
     return document
 
 
-def write_file(document, args):
+def write_file(document: etree._Element, args: Namespace) -> None:
     document.write(args.target,
                    pretty_print=args.pretty,
                    # TODO obtain options from source:
@@ -95,17 +97,19 @@ def write_file(document, args):
     dbg('Wrote result back to file.')
 
 
-def main():
+def main(args: Sequence[str] = None) -> None:
     nfo('Starting')
     try:
-        args = parse_args()
+        if args is None:
+            args = sys.argv[1:]
+        args = parse_args(args)
         setup_logging(args.verbose)
         dbg(f'Invoked with args: {args}')
         transformation = get_transformation(args.transformation)
         result = apply_transformation(transformation, args.target)
         write_file(result, args)
-    except Exception as e:
-        print_exc(e)
+    except Exception:
+        print_exc()
         raise SystemExit(2)
 
 
@@ -113,4 +117,4 @@ if __name__ == '__main__':
     main()
 
 
-__all__ = []
+__all__ = [main.__name__]
