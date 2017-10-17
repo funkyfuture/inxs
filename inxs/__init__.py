@@ -419,7 +419,7 @@ class Transformation:
         'context': {},
         'copy': True,
         'name': None,
-        'result_object': None,
+        'result_object': 'root',
         'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
     }
     """ The default :term:`configuration` values. Changing members on an instance actually affects
@@ -490,7 +490,10 @@ class Transformation:
                 dbg("Aborting due to 'AbortTransformation'.")
                 break
 
-        result = dot_lookup(self, self.config.result_object)
+        if self.config.result_object:
+            result = dot_lookup(self, self.config.result_object)
+        else:
+            result = None
         self._finalize_transformation()
         return result
 
@@ -518,13 +521,6 @@ class Transformation:
         else:
             self.states.tree = transformation_root.getroottree()
             self.states.root = transformation_root
-
-        if self.config.result_object is None:
-            dbg("Setting result_object to 'root'.")
-            self.config.result_object = 'root'
-            self.states.__config_result_object_is_none__ = True
-        else:
-            self.states.__config_result_object_is_none__ = False
 
         self.states.xpath_evaluator = etree.XPathEvaluator(self.states.root, smart_prefix=True)
 
@@ -583,9 +579,7 @@ class Transformation:
             self.states.previous_result = handler(**kwargs)
 
     def _finalize_transformation(self) -> None:
-        dbg('Finalizing preocessing.')
-        if self.states.__config_result_object_is_none__:
-            del self.config.result_object
+        dbg('Finalizing processing.')
         self.states = None
 
     @property
