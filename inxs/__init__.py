@@ -222,27 +222,40 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
         Alternatively a callable can be passed that returns such mappings during the
         transformation.
     """
-    def callable_evaluator(transformation):
-        kwargs = dependency_injection.resolve_dependencies(
-            constraints, transformation._available_symbols).as_kwargs
-        return MatchesAttributes(constraints(**kwargs))(transformation.states.current_element)
+    def callable_evaluator(element, transformation):
+        _constraints = constraints(transformation)
+        dbg("Resolved attributes' constraints from callable: '{}'".format(_constraints))
+        return MatchesAttributes(_constraints)(element, transformation)
 
     if callable(constraints):
         return callable_evaluator
 
-    key_string_constraints = {k: v for k, v in constraints.items() if isinstance(k, str)}
-    key_re_constraints = {k: v for k, v in constraints.items() if isinstance(k, Pattern)}
+    key_only_constraints = [k for k, v in constraints.items() if v is None]
+    key_string_constraints = {k: v for k, v in constraints.items()
+                              if isinstance(k, str) and v is not None}
+    key_re_constraints = {k: v for k, v in constraints.items()
+                          if isinstance(k, Pattern) and v is not None}
 
     def evaluator(element: etree._Element, _) -> bool:
         attributes = element.attrib
+
+        if constraints and not attributes:
+            return False
+
+        # check the presence of keys
+        for key_constraint in key_only_constraints:
+            if isinstance(key_constraint, str) and key_constraint not in attributes:
+                return False
+            elif isinstance(key_constraint, Pattern) and \
+                    not any(key_constraint.match(key) for key in attributes.keys()):
+                return False
+
         value_string_constraints, value_re_constraints = {}, {}
 
         # check attributes' keys with string constraints
         for key_constraint, value_constraint in key_string_constraints.items():
             if key_constraint not in attributes:
                 return False
-            if value_constraint is None:
-                continue
             if isinstance(value_constraint, str):
                 value_string_constraints[key_constraint] = value_constraint
             elif isinstance(value_constraint, Pattern):
@@ -250,15 +263,11 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 
         # check attributes' keys with regular expression constraints
         for key_constraint, value_constraint in key_re_constraints.items():
-            _matched = False
             for attribute in (x for x in attributes if key_constraint.match(x)):
-                _matched = True
                 if isinstance(value_constraint, str):
                     value_string_constraints[attribute] = value_constraint
                 elif isinstance(value_constraint, Pattern):
                     value_re_constraints[attribute] = value_constraint
-            if value_constraint is None and not _matched:
-                return False
 
         # check attributes' values
         for key, constraint in value_string_constraints.items():

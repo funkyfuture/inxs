@@ -2,6 +2,7 @@ import operator
 import re
 
 from lxml import etree
+from pytest import mark
 
 from inxs import *
 from inxs import lib
@@ -47,10 +48,12 @@ def test_any_element():
         assert element.text == 'x'
 
 
-def test_attributes():
+@mark.parametrize('constraint', ({'b': 'x'}, {'b': re.compile('^x$')},
+                                 MatchesAttributes(lambda x: {'b': 'x'})))
+def test_attributes(constraint):
     document = etree.fromstring('<root><a b="x"/><a b="y"/></root>')
     transformation = Transformation(
-        Rule({'b': 'x'}, lib.set_text('x'))
+        Rule(constraint, lib.set_text('x'))
     )
     result = transformation(document)
     assert result.text is None
@@ -58,16 +61,18 @@ def test_attributes():
     assert result[1].text is None
 
 
-def test_attributes_re_key():
+@mark.parametrize('constraint,expected',
+                  (({re.compile('default-'): None}, ['item1', 'item2']),
+                   ({re.compile('default-'): 'x'}, ['item1']),
+                   ({re.compile('default-'): re.compile('x|y')}, ['item1', 'item2'])))
+def test_attributes_re_key(constraint, expected):
     document = etree.fromstring('<root><item1 default-source="x"/>'
                                 '<item2 default-value="y"/><item3/></root>')
     transformation = Transformation(
-        Rule({re.compile('default-'): None},
-             (lib.debug_symbols('element'),
-                 lib.get_localname, lib.append('result'))),
+        Rule(constraint, (lib.get_localname, lib.append('result'))),
         context={'result': []}, result_object='context.result'
     )
-    assert transformation(document) == ['item1', 'item2']
+    assert transformation(document) == expected
 
 
 def test_common_conditions():
@@ -116,10 +121,11 @@ def test_OneOf():
     assert all(x.text is None for x in result)
 
 
-def test_xpath():
+@mark.parametrize('xpath', ('//a', MatchesXPath(lambda x: '//a')))
+def test_xpath(xpath):
     document = etree.fromstring('<root><a/><b/></root>')
     transformation = Transformation(
-        Rule('//a', lib.set_text('x'))
+        Rule(xpath, lib.set_text('x'))
     )
     result = transformation(document)
     assert result.text is None
