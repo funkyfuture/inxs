@@ -254,7 +254,10 @@ def lowercase(previous_result):
 
 @export
 def make_element(tag, namespace_s=None):
-    # FIXME
+    """ This handler creates an empty element with the given ``tag``. The tag can have a prefix.
+        If ``namespace_s`` is ``None`` the namespace mapping of the :term:`transformation root`
+        is used as context. If given as :term:`mapping`, this is used as context.
+        It can also be provided as string, which is then used as default namespace. """
     def handler(transformation, nsmap):
         if is_Ref(tag):
             _tag = tag(transformation)
@@ -267,10 +270,10 @@ def make_element(tag, namespace_s=None):
         else:
             _namespace_s = namespace_s
         if isinstance(_namespace_s, str):
-            return etree.Element(_tag, nsmap={None: _namespace_s})
+            return etree.Element('{' + _namespace_s + '}' + _tag)
         else:
             if ':' in _tag:
-                prefix, _tag = _tag.split('.', 1)
+                prefix, _tag = _tag.split(':', 1)
                 _tag = '{' + _namespace_s[prefix] + '}' + _tag
             return etree.Element(_tag, nsmap=_namespace_s)
     return handler
