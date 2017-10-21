@@ -13,7 +13,7 @@ functional to you, it doesn't need to be polished at that point.
 
 from copy import deepcopy
 import logging
-from typing import AnyStr, Callable, List
+from typing import Callable, List
 
 from lxml import builder, etree
 
