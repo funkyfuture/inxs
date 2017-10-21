@@ -4,7 +4,7 @@ from functools import lru_cache
 import logging
 from os import getenv
 from types import SimpleNamespace
-from typing import Callable, Dict, Iterator, Mapping, Pattern, Sequence, Union
+from typing import AnyStr, Callable, Dict, Iterator, Mapping, Pattern, Sequence, Union
 from typing import Any as AnyType
 
 import dependency_injection
@@ -72,13 +72,15 @@ class SkipToNextElement(FlowControl):
     """
 
 
-# helpers
-
+# types
 
 AttributesConditionType = Dict[Union[str, Pattern], Union[str, Pattern, None]]
+ConditionType = Union[Callable, AnyStr, AttributesConditionType]
 
 
-def _condition_factory(condition: Union[str, AttributesConditionType, Callable]) -> Callable:
+# helpers
+
+def _condition_factory(condition: ConditionType) -> Callable:
     """ Generates test functions for conditions provided as string or mapping. """
     if isinstance(condition, str):
         if condition == '/':
@@ -104,7 +106,7 @@ def _condition_factory(condition: Union[str, AttributesConditionType, Callable])
         return condition
 
 
-def dot_lookup(obj: AnyType, name: str):
+def dot_lookup(obj: AnyType, name: AnyStr):
     """ Looks up the attribute ``name`` from ``obj`` considering nested attributes that are
         separated by a ``.`` """
     for _name in name.split('.'):
@@ -133,7 +135,7 @@ def _is_flow_control(obj: AnyType) -> bool:
         return False
 
 
-def _is_root_condition(element, transformation):
+def _is_root_condition(element: etree._Element, transformation: 'Transformation'):
     return element is transformation.root
 
 
@@ -143,7 +145,7 @@ singleton_handler = lru_cache(HANDLER_CACHES_SIZE)
 # rules definition
 
 
-def Any(*conditions: Sequence[Callable]) -> Callable:
+def Any(*conditions: Sequence[ConditionType]) -> Callable:
     """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
         of them returned that.
     """
@@ -154,7 +156,7 @@ def Any(*conditions: Sequence[Callable]) -> Callable:
     return evaluator
 
 
-def OneOf(*conditions: Sequence[Callable]) -> Callable:
+def OneOf(*conditions: Sequence[ConditionType]) -> Callable:
     """ Returns a callable that evaluates the provided test functions and returns ``True`` if
         exactly one of them returned that.
     """
@@ -165,7 +167,7 @@ def OneOf(*conditions: Sequence[Callable]) -> Callable:
     return evaluator
 
 
-def Not(*conditions: Sequence[Callable]) -> Callable:
+def Not(*conditions: Sequence[ConditionType]) -> Callable:
     """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
         of them returned ``False``.
     """
@@ -177,7 +179,7 @@ def Not(*conditions: Sequence[Callable]) -> Callable:
 
 
 @singleton_handler
-def HasNamespace(namespace: str) -> Callable:
+def HasNamespace(namespace: AnyStr) -> Callable:
     """ Returns a callable that tests an element for the given tag namespace. """
     def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).namespace == namespace
@@ -185,7 +187,7 @@ def HasNamespace(namespace: str) -> Callable:
 
 
 @singleton_handler
-def HasLocalname(tag: str) -> Callable:
+def HasLocalname(tag: AnyStr) -> Callable:
     """ Returns a callable that tests an element for the given local tag name. """
     def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).localname == tag
@@ -193,7 +195,7 @@ def HasLocalname(tag: str) -> Callable:
 
 
 @singleton_handler
-def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
+def MatchesXPath(xpath: Union[AnyStr, Callable]) -> Callable:
     """ Returns a callable that tests an element for the given XPath expression (whether the
         evaluation result on the transformation root contains it) . If the ``xpath`` argument is a
         callable, it will be called with the current transformation as argument to obtain the
@@ -221,7 +223,7 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
         Alternatively a callable can be passed that returns such mappings during the
         transformation.
     """
-    def callable_evaluator(element, transformation):
+    def callable_evaluator(element: etree._Element, transformation: Transformation):
         _constraints = constraints(transformation)
         dbg("Resolved attributes' constraints from callable: '{}'".format(_constraints))
         return MatchesAttributes(_constraints)(element, transformation)
@@ -282,19 +284,19 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 
 
 @singleton_handler
-def Ref(name: str) -> Callable:
+def Ref(name: AnyStr) -> Callable:
     """ Returns a callable that can be used for value resolution in a condition test or
         :term:`handler function` that supports that. The value will be looked up during the
         processing of a transformation in :attr:`Transformation._available_symbols` by the given
         ``name``. This allows to reference dynamic values in :term:`transformation steps` and
         :class:`Rule` s.
     """
-    def simple_resolver(transformation) -> AnyType:
+    def simple_resolver(transformation: Transformation) -> AnyType:
         dbg('Resolving {}.'.format(name))
         return transformation._available_symbols[name]
     setattr(simple_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
-    def dot_resolver(transformation) -> AnyType:
+    def dot_resolver(transformation: Transformation) -> AnyType:
         dbg('Resolving {}.'.format(name))
         token = name.split('.')
         obj = transformation._available_symbols[token[0]]
@@ -363,8 +365,9 @@ class Rule:
     """
     __slots__ = ('name', 'conditions', 'handlers', 'traversal_order')
 
-    def __init__(self, conditions, handlers, name: str = None,
-                 traversal_order: Union[int, None] = None):
+    def __init__(self, conditions: Union[ConditionType, Sequence[ConditionType]],
+                 handlers: Union[Callable, Sequence[Callable]],
+                 name: AnyStr = None, traversal_order: int = None):
 
         self.name = name
         dbg("Initializing rule '{}'.".format(name))
@@ -393,7 +396,7 @@ class Once(Rule):
 # transformation
 
 
-def _traverse_df_ltr_btt(root) -> Iterator[etree._Element]:
+def _traverse_df_ltr_btt(root: etree._Element) -> Iterator[etree._Element]:
     def yield_children(element):
         for child in element:
             yield from yield_children(child)
@@ -401,11 +404,11 @@ def _traverse_df_ltr_btt(root) -> Iterator[etree._Element]:
     yield from yield_children(root)
 
 
-def _traverse_df_ltr_ttb(root) -> Iterator[etree._Element]:
+def _traverse_df_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
     yield from root.iter()
 
 
-def _traverse_root(root) -> Iterator[etree._Element]:
+def _traverse_root(root: etree._Element) -> Iterator[etree._Element]:
     yield root
 
 
@@ -461,12 +464,12 @@ class Transformation:
         TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
-    def __init__(self, *steps, **config):
+    def __init__(self, *steps: Union[Rule, Callable], **config: AnyType):
         dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
         self.steps = _flatten_sequence(steps)
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
-        self._expand_rules(self.config.common_rule_conditions)
+        self._expand_rules_conditions()
         self.states = None
 
     @property
@@ -474,7 +477,8 @@ class Transformation:
         """ The ``name`` member of the transformation's :term:`configuration`. """
         return getattr(self.config, 'name', None)
 
-    def _expand_rules(self, common_rule_conditions):
+    def _expand_rules_conditions(self):
+        common_rule_conditions = self.config.common_rule_conditions
         if common_rule_conditions is None:
             return
 
@@ -497,8 +501,8 @@ class Transformation:
                 dbg("Using default value '{}' for config key '{}'.".format(value, key))
                 setattr(self.config, key, value)
 
-    def __call__(self, transformation_root: etree._Element, copy: bool = None, **context) \
-            -> AnyType:
+    def __call__(self, transformation_root: etree._Element,
+                 copy: bool = None, **context: AnyType) -> AnyType:
         copy = self.config.copy if copy is None else copy
         self._init_transformation(transformation_root, copy, context)
 
@@ -525,7 +529,8 @@ class Transformation:
         self._finalize_transformation()
         return result
 
-    def _init_transformation(self, transformation_root, copy, context) -> None:
+    def _init_transformation(self, transformation_root: etree._Element, copy: bool,
+                             context: Dict[AnyStr, AnyType]) -> None:
         dbg('Initializing processing.')
         if not isinstance(transformation_root, etree._Element):
             raise RuntimeError('A transformation must be called with an lxml Element object.')
@@ -567,7 +572,7 @@ class Transformation:
                                              self.states.context.__dict__,
                                              self.config.__dict__)
 
-    def _apply_rule(self, rule) -> None:
+    def _apply_rule(self, rule: Rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
         dbg('Using traverser: {}'.format(traverser))
 
@@ -597,7 +602,7 @@ class Transformation:
             raise NotImplementedError
         return traverser
 
-    def _test_conditions(self, element, conditions) -> bool:
+    def _test_conditions(self, element: etree._Element, conditions: Sequence[Callable]) -> bool:
         # there's no dependency injection here because its overhead
         # shall be avoided during testing conditions
         for condition in conditions:
@@ -608,7 +613,7 @@ class Transformation:
             dbg('The condition applied.')
         return True
 
-    def _apply_handlers(self, *handlers) -> None:
+    def _apply_handlers(self, *handlers: Callable) -> None:
         dbg('Applying handlers.')
         for handler in handlers:
             if _is_flow_control(handler):
