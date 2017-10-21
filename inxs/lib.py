@@ -13,7 +13,7 @@ functional to you, it doesn't need to be polished at that point.
 
 from copy import deepcopy
 import logging
-from typing import Callable
+from typing import AnyStr, Callable, List
 
 from lxml import builder, etree
 
@@ -76,13 +76,14 @@ def clear_attributes(element, previous_result):
 @export
 @singleton_handler
 def concatenate(*parts):
-    """ Concatenate the given parts which may be strings or callables returning such. """
+    """ Concatenate the given parts which may be lists or strings as well as callables returning
+        such. """
     def handler(transformation) -> str:
         result = ''
         for part in parts:
             if callable(part):
                 _part = part(transformation)
-            elif isinstance(part, str):
+            elif isinstance(part, (str, List)):
                 _part = part
             else:
                 raise RuntimeError('Unhandled type: {}'.format(type(part)))
