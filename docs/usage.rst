@@ -176,6 +176,16 @@ Speaking of conditions, see :func:`inxs.Any`, :func:`inxs.OneOf` and :func:`inxs
 the logical and evaluation of all tests.
 
 
+Global configuration
+--------------------
+
+``inxs`` caches and reuses evaluator and handler functions with identical arguments where possible.
+By default these caches are not limited in size and they might eventually grow larger than the
+memory that was saved in big, long-running applications that create a lot of short-living
+transformations. To limit the size of each of these last-recently-used-caches, the environment
+variable :envvar:`HANDLER_CACHES_SIZE` can be set. The value should be a power of two.
+
+
 Caveats
 -------
 

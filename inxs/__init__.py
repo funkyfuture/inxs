@@ -16,10 +16,9 @@ from lxml import etree
 
 __version__ = '0.1b1'
 
-# TODO document
-HANDLER_CACHE_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
-if HANDLER_CACHE_SIZE is not None:
-    HANDLER_CACHE_SIZE = int(HANDLER_CACHE_SIZE)
+HANDLER_CACHES_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
+if HANDLER_CACHES_SIZE is not None:
+    HANDLER_CACHES_SIZE = int(HANDLER_CACHES_SIZE)
 
 REF_IDENTIFYING_ATTRIBUTE = '_this_is_a_Ref_resolver_'
 
@@ -138,7 +137,7 @@ def _is_root_condition(element, transformation):
     return element is transformation.root
 
 
-singleton_handler = lru_cache(HANDLER_CACHE_SIZE)
+singleton_handler = lru_cache(HANDLER_CACHES_SIZE)
 
 
 # rules definition
