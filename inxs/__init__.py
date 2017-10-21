@@ -553,6 +553,21 @@ class Transformation:
 
         self.states.xpath_evaluator = etree.XPathEvaluator(self.states.root, smart_prefix=True)
 
+        static_symbols = {
+            'config': self.config,
+            'context': self.states.context,
+            'nsmap': self.states.root.nsmap,
+            'root': self.states.root,
+            'transformation': self,
+            'tree': self.states.tree,
+            'xpath_evaluator': self.states.xpath_evaluator
+        }
+        self.states.dynamic_symbols = {}
+        self.states.symbols_chain = ChainMap(self.states.dynamic_symbols,
+                                             static_symbols,
+                                             self.states.context.__dict__,
+                                             self.config.__dict__)
+
     def _apply_rule(self, rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
         dbg('Using traverser: {}'.format(traverser))
@@ -632,18 +647,11 @@ class Transformation:
               transformation root.
 
         """
-        guaranteed_symbols = {
-            'config': self.config,
-            'context': self.states.context,
+        self.states.dynamic_symbols.update({
             'element': self.states.current_element,
-            'nsmap': self.states.root.nsmap,
             'previous_result': self.states.previous_result,
-            'root': self.states.root,
-            'transformation': self,
-            'tree': self.states.tree,
-            'xpath_evaluator': self.states.xpath_evaluator
-        }
-        return ChainMap(guaranteed_symbols, vars(self.states.context), vars(self.config))
+        })
+        return self.states.symbols_chain
 
     # aliases that are supposed to be broken when the transformation isn't processing
 
