@@ -1,4 +1,5 @@
 import operator
+from types import SimpleNamespace
 
 from lxml import etree
 
@@ -33,6 +34,50 @@ def test_config_is_immutable():
     right = tree.getpath(doc.find('b'))
     strip_surrounding_content(doc, left=left, right=right)
     strip_surrounding_content(doc, left=left, right=right)
+
+
+def test_dotted_Ref():
+    transformation = SimpleNamespace(
+        _available_symbols={'root': SimpleNamespace(item='check')})
+    assert Ref('root.item')(transformation) == 'check'
+
+
+def test_grouped_steps():
+    def append_to_list(value):
+        def appender(list):
+            list.append(value)
+        return appender
+
+    stpgrp_c = (append_to_list(3), append_to_list(4))
+    stpgrp_b = (append_to_list(2), stpgrp_c, append_to_list(5))
+    stpgrp_a = (append_to_list(1))
+
+    transformation = Transformation(
+        append_to_list(0),
+        stpgrp_a,
+        stpgrp_b,
+        context={'list': []}, result_object='context.list'
+    )
+    result = transformation(etree.Element('root'))
+    for exp, val in enumerate(result):
+        assert exp == val
+
+
+def test_SkipToNextElement():
+    def more_complicated_test(element):
+        # well, supposedly
+        if 'x' not in element.attrib:
+            raise SkipToNextElement
+        if int(element.attrib['x']) % 2:
+            raise SkipToNextElement
+        return element.tag
+
+    transformation = Transformation(
+        Rule('*', (more_complicated_test, lib.append('evens'))),
+        context={'evens': []}, result_object='context.evens'
+    )
+    doc = etree.fromstring('<root><a x="1"/><b x="2"/><c x="3"/><d x="4"/></root>')
+    assert transformation(doc) == ['b', 'd']
 
 
 def test_subtransformation():

@@ -470,6 +470,7 @@ class Transformation:
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
         self._expand_rules_conditions()
+        self._validate_steps()
         self.states = None
 
     @property
@@ -501,6 +502,10 @@ class Transformation:
                 dbg("Using default value '{}' for config key '{}'.".format(value, key))
                 setattr(self.config, key, value)
 
+    def _validate_steps(self):
+        assert all(isinstance(x, (Callable, Rule)) for x in self.steps), \
+            'Transformation steps must be either a `Rule` instance or a callable.'
+
     def __call__(self, transformation_root: etree._Element,
                  copy: bool = None, **context: AnyType) -> AnyType:
         copy = self.config.copy if copy is None else copy
@@ -514,10 +519,8 @@ class Transformation:
             try:
                 if isinstance(step, Rule):
                     self._apply_rule(step)
-                elif callable(step):
-                    self._apply_handlers(step)
                 else:
-                    raise RuntimeError
+                    self._apply_handlers(step)
             except AbortTransformation:
                 dbg("Aborting due to 'AbortTransformation'.")
                 break
@@ -588,7 +591,7 @@ class Transformation:
                 dbg('Aborting rule.')
                 break
             except SkipToNextElement:
-                dbg('Skip to next element.')
+                dbg('Skipping to next element.')
                 continue
 
         self.states.current_element = None
