@@ -197,9 +197,9 @@ def HasLocalname(tag: AnyStr) -> Callable:
 @singleton_handler
 def MatchesXPath(xpath: Union[AnyStr, Callable]) -> Callable:
     """ Returns a callable that tests an element for the given XPath expression (whether the
-        evaluation result on the transformation root contains it) . If the ``xpath`` argument is a
-        callable, it will be called with the current transformation as argument to obtain the
-        expression.
+        evaluation result on the :term:`transformation root` contains it) . If the ``xpath``
+        argument is a callable, it will be called with the current transformation as argument to
+        obtain the expression.
     """
     def callable_evaluator(element: etree._Element, transformation: Transformation) -> bool:
         _xpath = xpath(transformation)
@@ -415,8 +415,8 @@ def _traverse_root(root: etree._Element) -> Iterator[etree._Element]:
 class Transformation:
     """ A transformation instance is defined by its :term:`transformation steps` and
         :term:`configuration`. It is to be called with an ``lxml`` representation of an XML element
-        as transformation root, only this element and its children will be considered during
-        traversal.
+        as :term:`transformation root`, only this element and its children will be considered
+        during traversal.
 
         :param steps: The designated transformation steps of the instance are given as a sequence
                       of positional arguments.
@@ -438,7 +438,7 @@ class Transformation:
                        - ``name`` can be used to identify a transformation.
                        - ``result_object`` sets the transformation's attribute that is returned as
                          result. Dot-notation lookup (e.g. ``context.target``) is implemented. Per
-                         default the transformation root is returned.
+                         default the :term:`transformation root` is returned.
                        - ``traversal_order`` sets the default traversal order for rule evaluations
                          and itself defaults to depth first, left to right, to to bottom. See
                          :ref:`traversal_strategies` for possible values.
@@ -647,11 +647,12 @@ class Transformation:
               case of simple :term:`transformation steps`.
             - ``previous_result`` - The result that was returned by the previously evaluated
               handler function.
-            - ``root`` - The root element of the processed (sub-)document a.k.a transformation root.
+            - ``root`` - The root element of the processed (sub-)document a.k.a
+              :term:`transformation root`.
             - ``transformation`` - The calling :class:`Transformation` instance.
             - ``tree`` - The tree object of the processed document.
             - ``xpath_evaluator`` - The XPathEvaluator instance that is bound to the
-              transformation root.
+              :term:`transformation root`.
 
         """
         self.states.dynamic_symbols.update({

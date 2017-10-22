@@ -59,8 +59,8 @@ is generated, the ``ul`` element within it is added to the context as ``persons_
 .. _fixtures: https://docs.pytest.org/en/latest/fixture.html
 
 Line 4 defines something that is used more often in real world uses than here. A :class:`inxs.Rule`
-that tests the transformation root and its descendants for defined properties. In the example all
-elements with a ``person`` tag will be passed to this :term:`handler function`:
+that tests the :term:`transformation root` and its descendants for defined properties. In the
+example all elements with a ``person`` tag will be passed to this :term:`handler function`:
 
 .. code-block:: python
 
@@ -90,20 +90,21 @@ again the Element API and Python's :term:`f-string` s are used to generate the r
 As the transformation was configured with ``context.html`` as result object, the transformation
 returns the object referenced as ``html`` (see handler function in line 3) from the context. If the
 transformation hasn't explicitly configured a result object, (per default a copy of) the
-transformation root is returned. Any other data is discarded.
+:term:`transformation root` is returned. Any other data is discarded.
 
-The initialized transformation can now be called with an lxml element as transformation root:
+The initialized transformation can now be called with an lxml element as
+:term:`transformation root`:
 
     >>> result = transformation(xml_element)  # doctest: +SKIP
 
-A transformation root doesn't need to be the document's root, leaving siblings and ancestors
-untouched. A transformation works on a copy of the document's tree unless the configuration
-contains a key ``copy`` set to ``False`` or the transformation is called with such keyword
-argument.
+A :term:`transformation root` doesn't need to be the document's root, leaving siblings and
+ancestors untouched. A transformation works on a copy of the document's tree unless the
+configuration contains a key ``copy`` set to ``False`` or the transformation is called with such
+keyword argument.
 
-Transformations can also be used as simple steps - then invoked with the transformation root - or
-as rule handlers - then invoked with each matching element. Per default these do not operate on
-copies, to do so :func:`inxs.lib.f` can be employed:
+Transformations can also be used as simple steps - then invoked with the
+:term:`transformation root` - or as rule handlers - then invoked with each matching element.
+Per default these do not operate on copies, to do so :func:`inxs.lib.f` can be employed:
 
 .. code-block:: python
 
@@ -150,8 +151,9 @@ Rules can be initiated with such value as ``traversal_order`` argument and overr
 transformation's one (that one defaults to ``…_DEPTH_FIRST | …_LEFT_TO_RIGHT | …_TOP_TO_BOTTOM``).
 Not all strategies are are implemented yet.
 
-``inxs.TRAVERSE_ROOT_ONLY`` sets a strategy that only considers the transformation root. It is also
-set implicitly for rules that contain a ``'/'`` as condition (see :ref:`rule_condition_shortcuts`).
+``inxs.TRAVERSE_ROOT_ONLY`` sets a strategy that only considers the :term:`transformation root`. It
+is also set implicitly for rules that contain a ``'/'`` as condition (see
+:ref:`rule_condition_shortcuts`).
 
 
 .. _rule_condition_shortcuts:
@@ -161,19 +163,19 @@ Rule condition shortcuts
 
 Strings can be used to specify certain rule conditions:
 
-- ``/`` selects only the transformation root
+- ``/`` selects only the :term:`transformation root`
 - ``*`` selects all elements - should only be used if there are no other conditions
 - any string that contains a colon (but not more that one consecutively) selects elements with
   a namespace that matches the string
 - strings that contain only letters select elements whose local name matches the string
 - all other strings will select all elements that an XPath evaluation of that string on the
-  transformation root returns
+  :term:`transformation root` returns
 
 Another shortcut is to pass a dictionary to test an element's attributes, see
 :func:`inxs.MatchesAttributes` for details.
 
 Speaking of conditions, see :func:`inxs.Any`, :func:`inxs.OneOf` and :func:`inxs.Not` to overcome
-the logical and evaluation of all tests.
+the logical ``and`` evaluation of all tests.
 
 
 Global configuration
@@ -251,6 +253,10 @@ Glossary
       or as conditionally executed ``handlers`` of a :class:`inxs.Rule`. Any of their signature's
       :term:`argument` s must be available in :attr:`inxs.Transformation._available_symbols` upon
       the time the function gets called.
+
+   transformation root
+      This is the element that a transformation instance is called with. Any traverser will return
+      neither its ancestors nor its siblings.
 
    transformation steps
       Transformation steps are :term:`handler functions <handler function>` or :class:`inxs.Rule`
