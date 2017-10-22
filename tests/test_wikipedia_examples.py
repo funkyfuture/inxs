@@ -2,7 +2,7 @@ from operator import itemgetter
 
 from lxml import etree
 
-from inxs import lib, Rule, Transformation
+from inxs import lib, lxml_utils, Rule, Transformation
 
 from tests import equal_subtree, parse
 
@@ -32,15 +32,15 @@ def test_wikipedia_example_1():
     def extract_person(element):
         return element.attrib['username'], element.find('name').text
 
-    def append_person(previous_result, target):
-        element = etree.SubElement(target, 'name', {'username': previous_result[0]})
-        element.text = previous_result[1]
+    def append_person(previous_result, result):
+        lxml_utils.subelement(result, 'name', {'username': previous_result[0]},
+                              text=previous_result[1])
 
     transformation = Transformation(
         Rule('person', (extract_person, append_person)),
-        result_object='context.target', context={'target': etree.Element('root')})
+        result_object='context.result', context={'result': etree.Element('root')})
 
-    # that's five (or not counting line-breaks: eight) lines less sloc than the XSLT implementation
+    # that's five (or not counting line-breaks: nine) lines less sloc than the XSLT implementation
 
     assert equal_subtree(transformation(wp_document), expected)
 
@@ -60,10 +60,10 @@ def test_wikipedia_example_2():
     """)
 
     def generate_skeleton(context, e):
+        context.persons_list = e.ul()
         context.html = e.html(
             e.head(e.title('Testing XML Example')),
-            e.body(e.h1('Persons'), e.ul()))
-        context.persons_list = context.html.xpath('./body/ul', smart_prefix=True)[0]
+            e.body(e.h1('Persons'), context.persons_list))
 
     def extract_person(element, persons):
         persons.append((element.find('name').text, element.find('family-name').text))
