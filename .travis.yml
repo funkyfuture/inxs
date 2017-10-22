@@ -11,7 +11,8 @@ env:
 
 install:
   - travis_retry pip install tox
+  - if [[ $TOXENV == py36 ]]; then travis_retry pip install coveralls; fi
 script:
   - tox
 after_success:
-  - [[ $TOXENV == py36 ]] && coveralls
+  - if [[ $TOXENV == py36 ]]; then coveralls; fi
