@@ -94,7 +94,7 @@ transformation root is returned. Any other data is discarded.
 
 The initialized transformation can now be called with an lxml element as transformation root:
 
-    >>> result = transformation(xml_element)
+    >>> result = transformation(xml_element)  # doctest: +SKIP
 
 A transformation root doesn't need to be the document's root, leaving siblings and ancestors
 untouched. A transformation works on a copy of the document's tree unless the configuration

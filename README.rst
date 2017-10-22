@@ -7,7 +7,7 @@ inxs is not XSLT.
 
 inxs is ISC-licensed.
 
-inxs is fully documented here: https://inxs.readthedocs.io.
+inxs is fully documented here: https://inxs.readthedocs.io/en/latest/
 
 
 At a glimpse

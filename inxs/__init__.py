@@ -318,7 +318,7 @@ def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
 
         Examples:
 
-        >>> If(Ref('previous_result'), operator.is_not, None)
+        >>> If(Ref('previous_result'), operator.is_not, None)  # doctest: +SKIP
 
     """
     # TODO allow single arguments

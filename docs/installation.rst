@@ -26,7 +26,7 @@ must be built locally::
 
 .. _build instructions: http://lxml.de/build.html#static-linking-on-windows
 .. _proposed feature: https://github.com/lxml/lxml/pull/236
-.. _sources: https://github.com/funkyfuture/lxml/archive/smart_xpath.zip
+.. _sources: https://codeload.github.com/funkyfuture/lxml/zip/smart_xpath
 
 
 From the cheeseshop
@@ -41,7 +41,7 @@ This is the preferred method to install inxs, as it will always install the most
 If you don't have pip_ installed, this `Python installation guide`_ can guide
 you through the process.
 
-.. _pip: https://pip.pypa.io
+.. _pip: https://pip.pypa.io/en/stable/
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
 
 
@@ -68,4 +68,4 @@ Or install an editable instance::
 
 
 .. _Github repo: https://github.com/funkyfuture/inxs
-.. _tarball: https://github.com/funkyfuture/inxs/tarball/master
+.. _tarball: https://codeload.github.com/funkyfuture/inxs/legacy.tar.gz/master

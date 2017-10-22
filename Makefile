@@ -48,14 +48,18 @@ clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
 	rm -fr htmlcov/
 
+.PHONY: doctest
+doctest: ## Tests docs and contained links
+	$(MAKE) -C docs doctest
+	$(MAKE) -C docs linkcheck
+
 lint: ## check style with flake8
 	tox -e flake8
 
 test: ## run tests quickly with the default Python
 	pytest
 
-test-all: ## run tests on every Python version with tox
-	tox
+test-all: lint test doctest ## run all tests
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source inxs -m pytest
