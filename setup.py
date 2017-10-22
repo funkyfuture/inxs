@@ -6,8 +6,8 @@ from subprocess import check_call
 from sys import stderr, stdout, version_info
 
 
-if version_info < (3, 5):
-    raise RuntimeError("Requires Python 3.5 or later.")
+if version_info < (3, 6):
+    raise RuntimeError("Requires Python 3.6 or later.")
 
 
 with open('README.rst') as readme_file:
@@ -47,7 +47,6 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Text Processing :: Markup :: XML'
