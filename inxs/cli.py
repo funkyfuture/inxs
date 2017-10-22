@@ -86,7 +86,7 @@ def apply_transformation(transformation: Transformation, target: str) -> etree._
     return document
 
 
-def write_file(document: etree._Element, args: Namespace) -> None:
+def write_file(document: etree._ElementTree, args: Namespace) -> None:
     document.write(args.target,
                    pretty_print=args.pretty,
                    # TODO obtain options from source:

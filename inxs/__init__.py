@@ -4,7 +4,8 @@ from functools import lru_cache
 import logging
 from os import getenv
 from types import SimpleNamespace
-from typing import AnyStr, Callable, Dict, Iterator, Mapping, Pattern, Sequence, Union
+from typing import (AnyStr, Callable, Dict, Iterator, List, Mapping, Pattern,  # noqa: F401
+                    Sequence, Union)
 from typing import Any as AnyType
 
 import dependency_injection
@@ -74,7 +75,7 @@ class SkipToNextElement(FlowControl):
 
 # types
 
-AttributesConditionType = Dict[Union[str, Pattern], Union[str, Pattern, None]]
+AttributesConditionType = Union[Dict[Union[str, Pattern], Union[str, Pattern, None]], Callable]
 ConditionType = Union[Callable, AnyStr, AttributesConditionType]
 
 
@@ -106,7 +107,7 @@ def _condition_factory(condition: ConditionType) -> Callable:
         return condition
 
 
-def dot_lookup(obj: AnyType, name: AnyStr):
+def dot_lookup(obj: AnyType, name: str):
     """ Looks up the attribute ``name`` from ``obj`` considering nested attributes that are
         separated by a ``.`` """
     for _name in name.split('.'):
@@ -115,7 +116,7 @@ def dot_lookup(obj: AnyType, name: AnyStr):
 
 
 def _flatten_sequence(seq: Sequence):
-    result = []
+    result: List = []
     for item in seq:
         if isinstance(item, Sequence) and not isinstance(item, str):
             result.extend(_flatten_sequence(item))
@@ -195,7 +196,7 @@ def HasLocalname(tag: AnyStr) -> Callable:
 
 
 @singleton_handler
-def MatchesXPath(xpath: Union[AnyStr, Callable]) -> Callable:
+def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
     """ Returns a callable that tests an element for the given XPath expression (whether the
         evaluation result on the :term:`transformation root` contains it) . If the ``xpath``
         argument is a callable, it will be called with the current transformation as argument to
@@ -284,7 +285,7 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 
 
 @singleton_handler
-def Ref(name: AnyStr) -> Callable:
+def Ref(name: str) -> Callable:
     """ Returns a callable that can be used for value resolution in a condition test or
         :term:`handler function` that supports that. The value will be looked up during the
         processing of a transformation in :attr:`Transformation._available_symbols` by the given
@@ -367,9 +368,9 @@ class Rule:
 
     def __init__(self, conditions: Union[ConditionType, Sequence[ConditionType]],
                  handlers: Union[Callable, Sequence[Callable]],
-                 name: AnyStr = None, traversal_order: int = None):
+                 name: str = None, traversal_order: int = None) -> None:
 
-        self.name = name
+        self.name: str = name
         dbg("Initializing rule '{}'.".format(name))
 
         if not isinstance(conditions, Sequence) or isinstance(conditions, str):
@@ -464,7 +465,7 @@ class Transformation:
         TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
-    def __init__(self, *steps: Union[Rule, Callable], **config: AnyType):
+    def __init__(self, *steps: Union[Rule, Callable], **config: AnyType) -> None:
         dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
         self.steps = _flatten_sequence(steps)
         self.config = SimpleNamespace(**config)
@@ -616,7 +617,7 @@ class Transformation:
             dbg('The condition applied.')
         return True
 
-    def _apply_handlers(self, *handlers: Callable) -> None:
+    def _apply_handlers(self, *handlers: Union[Callable, Exception]) -> None:
         dbg('Applying handlers.')
         for handler in handlers:
             if _is_flow_control(handler):
