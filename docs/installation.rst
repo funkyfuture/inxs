@@ -8,17 +8,14 @@ Installation
 Prerequisites
 -------------
 
-At least Python 3.5 and ``pip`` must be installed. As ``inxs`` is depending on a
+At least Python 3.6 and ``pip`` must be installed. As ``inxs`` is depending on a
 `proposed feature`_ for ``lxml``, its binary wheels can't be used for installation and a patched version
-must be built locally::
+will be built locally which requires some C header files::
 
     # On Debian and derived systems like Ubuntu:
     $ sudo apt-get install build-essential libxml2-dev libxslt-dev zlib1g-dev
     # On Alpine Linux:
     $ apk add build-base libxml2-dev libxslt-dev zlib-dev
-
-    $ pip install cython
-    $ pip install https://github.com/funkyfuture/lxml/tarball/smart_xpath#egg=lxml
 
 
 *Windows* users should download and extract the sources_ and follow these `build instructions`_.
