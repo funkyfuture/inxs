@@ -22,7 +22,7 @@ class Install(install):
     @staticmethod
     def check_lxml():
         try:
-            from lxml import etree
+            from lxml import etree  # noqa: F401
         except ImportError:
             return False
         else:
