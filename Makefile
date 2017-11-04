@@ -59,7 +59,7 @@ lint: ## check style with flake8
 test: ## run tests quickly with the default Python
 	pytest
 
-test-all: lint test doctest ## run all tests
+test-all: clean lint test doctest ## run all tests
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source inxs -m pytest
