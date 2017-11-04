@@ -323,6 +323,7 @@ def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
 
     """
     # TODO allow single arguments
+    # TODO? allow primitive expressions for stdlib.operator's members
     def evaluator(_, transformation: Transformation) -> AnyType:
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
