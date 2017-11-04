@@ -78,7 +78,7 @@ class Install(lxmlInstall, install):
 
 setup(
     name='inxs',
-    version='0.1b2.dev2',
+    version='0.1b2.dev3',
     description="A framework for XML transformations without boilerplate.",
     long_description=readme + '\n\n' + history,
     author="Frank Sachsenheim",

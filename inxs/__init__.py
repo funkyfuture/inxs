@@ -15,7 +15,7 @@ from lxml import etree
 # constants
 
 
-__version__ = '0.1b2.dev2'
+__version__ = '0.1b2.dev3'
 
 HANDLER_CACHES_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
 if HANDLER_CACHES_SIZE is not None:
