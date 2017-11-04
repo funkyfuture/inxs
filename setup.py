@@ -3,6 +3,7 @@
 
 from pip import main as pip
 from setuptools import setup
+from setuptools.command.develop import develop
 from setuptools.command.install import install
 from sys import version_info
 
@@ -18,7 +19,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 
-class Install(install):
+class lxmlInstall():
     @staticmethod
     def check_lxml():
         try:
@@ -67,6 +68,14 @@ class Install(install):
         super().run()
 
 
+class Develop(lxmlInstall, develop):
+    pass
+
+
+class Install(lxmlInstall, install):
+    pass
+
+
 setup(
     name='inxs',
     version='0.1b2.dev1',
@@ -78,7 +87,7 @@ setup(
     packages=['inxs'],
     package_dir={'inxs': 'inxs'},
     include_package_data=True,
-    cmdclass={'install': Install},
+    cmdclass={'develop': Develop, 'install': Install},
     install_requires=['dependency_injection'],
     license="ISC license",
     zip_safe=False,
