@@ -5,7 +5,9 @@ from lxml import etree
 
 
 def find(element, path):
-    # FIXME
+    """ A helper function around a :attr:`lxml.etree._Element.find` that passes the element's
+        namespace mapping.
+    """
     return element.find(path, namespaces=element.nsmap)
 
 
