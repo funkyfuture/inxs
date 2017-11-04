@@ -306,15 +306,8 @@ def pop_attribute(name):
 @export
 @singleton_handler
 def put_variable(name, value=Ref('previous_result')):
-    """ Puts the ``previous_result`` as ``name`` to the :term:`context` namespace. """
-    def callable_handler(transformation):
-        setattr(transformation.context, name, value())
-        return transformation.states.previous_result
-
-    def callable_handler_dot_lookup(transformation):
-        setattr(dot_lookup(transformation.context, name), value())
-        return transformation.states.previous_result
-
+    """ Puts ``value``as ``name`` to the :term:`context` namespace, by default the value is
+        determined by a :func:`inxs.Ref` to ``previous_result``. """
     def ref_handler(transformation):
         setattr(transformation.context, name, value(transformation))
         return transformation.states.previous_result
@@ -335,10 +328,6 @@ def put_variable(name, value=Ref('previous_result')):
         if '.' in name:
             return ref_handler_dot_lookup
         return ref_handler
-    elif callable(value):
-        if '.' in name:
-            return callable_handler_dot_lookup
-        return callable_handler
     elif '.' in name:
         return simple_handler_dot_lookup
     else:
