@@ -84,11 +84,9 @@ release: test-all clean ## package and upload a release
 	git tag -f $(VERSION)
 	git push -f origin $(VERSION)
 	python setup.py sdist upload
-	python setup.py bdist_wheel upload
 
 dist: clean ## builds source and wheel package
 	python setup.py sdist
-	python setup.py bdist_wheel
 	ls -l dist
 
 install: clean ## install the package to the active Python's site-packages
