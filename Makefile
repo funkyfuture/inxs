@@ -34,8 +34,10 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
+	rm -fr docs/_build/
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.orig' -exec rm -f {} +
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -45,7 +47,7 @@ clean-pyc: ## remove Python file artifacts
 
 clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
-	rm -f .coverage
+	rm -f tests/.coverage
 	rm -fr htmlcov/
 
 .PHONY: doctest
@@ -57,9 +59,9 @@ lint: ## check style with flake8
 	tox -e flake8
 
 test: ## run tests quickly with the default Python
-	pytest
+	tox -e py36
 
-test-all: clean lint test doctest ## run all tests
+test-all: lint test doctest ## run all tests
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source inxs -m pytest
@@ -79,7 +81,7 @@ servedocs: docs ## compile the docs watching for changes
 showdocs:
 	$(BROWSER) docs/_build/html/index.html
 
-release: test-all clean ## package and upload a release
+release: clean test-all clean ## package and upload a release
 	git push
 	git tag -f $(VERSION)
 	git push -f origin $(VERSION)
