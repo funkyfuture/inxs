@@ -8,6 +8,7 @@ from copy import deepcopy
 from functools import lru_cache
 import logging
 from os import getenv
+import pkg_resources
 from types import SimpleNamespace
 from typing import (AnyStr, Callable, Dict, Iterator, List, Mapping, Pattern,  # noqa: F401
                     Sequence, Union)
@@ -20,7 +21,7 @@ from lxml import etree
 # constants
 
 
-__version__ = '0.1b2.dev3'
+__version__ = pkg_resources.get_distribution('inxs').version
 
 HANDLER_CACHES_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
 if HANDLER_CACHES_SIZE is not None:

@@ -1,7 +1,9 @@
 import operator
+import re
 from types import SimpleNamespace
 
 from lxml import etree
+from pytest import mark
 
 from inxs import *
 from inxs import lib
@@ -98,3 +100,11 @@ def test_subtransformation():
 
     result = transformation(doc)
     assert result.tag == 'pablo'
+
+
+version_pattern = re.compile(r'\d+\.\d+(\.\d+)?((a|b|rc)\d+)?(\.post\d+)?(\.dev\d+)?')
+
+
+@mark.parametrize('s', ('0.1', '0.1b2.dev3', '0.1b2', '1.0', '1.0.1', __version__))
+def test_version(s):
+    assert version_pattern.match(s)

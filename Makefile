@@ -22,7 +22,7 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
-VERSION = $(shell grep __version__ inxs/__init__.py | cut -f3 -d" " | tr -d "'")
+VERSION = $(shell python setup.py --version)
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
