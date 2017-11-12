@@ -9,6 +9,7 @@ functional to you, it doesn't need to be polished at that point.
 
 
 # TODO indicate use area in function's docstrings; and whether they return something
+# TODO delete unneeded symbols in setup functions' locals
 
 
 from copy import deepcopy

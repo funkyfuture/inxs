@@ -1,3 +1,8 @@
+# TODO annotate Callable types with signature and return values
+# https://docs.python.org/3.6/library/typing.html?highlight=namedtuple#callable
+# TODO allow QName as condition
+# TODO delete unneeded symbols in setup functions' locals
+
 from collections import ChainMap
 from copy import deepcopy
 from functools import lru_cache
