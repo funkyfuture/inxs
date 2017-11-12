@@ -378,6 +378,17 @@ def resolve_xpath_to_element(*names):
 
 @export
 @singleton_handler
+def set_attribute(name, value):
+    """ Sets an attribute ``name`` with ``value``. """
+    # TODO Ref resolving
+    def handler(element, previous_result):
+        element.attrib[name] = value
+        return previous_result
+    return handler
+
+
+@export
+@singleton_handler
 def set_localname(name):
     """ Sets the element's localname to ``name``. """
     def handler(element, previous_result):
