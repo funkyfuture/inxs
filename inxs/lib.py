@@ -121,7 +121,7 @@ def debug_symbols(*names):
         :attr:`inxs.Transformation._available_symbols` at info level. """
     def handler(transformation):
         for name in names:
-            nfo(transformation._available_symbols[name])
+            nfo(f'symbol {name}: {transformation._available_symbols[name]!r}')
         return transformation.states.previous_result
     return handler
 
