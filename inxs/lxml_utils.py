@@ -62,12 +62,15 @@ def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_
                 if element.tail:
                     parent.text += element.tail
             else:
-                if previous.tail is None:
-                    previous.tail = ''
                 if element.text:
+                    if previous.tail is None:
+                        previous.tail = ''
                     previous.tail += element.text
                 if element.tail:
-                    previous.tail += element.tail
+                    if element[-1].tail is None:
+                        element[-1].tail = element.tail
+                    else:
+                        element[-1].tail += element.tail
 
         if keep_children:
             for child in element:
