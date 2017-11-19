@@ -143,10 +143,7 @@ def drop_siblings(left_or_right):
     def processor(element):
         if lxml_utils.is_root_element(element):
             return
-
-        for sibling in element.itersiblings(preceding=preceding):
-            lxml_utils.remove_element(sibling)
-
+        lxml_utils.remove_elements(*element.itersiblings(preceding=preceding))
         parent = element.getparent()
         if parent is not None:
             processor(parent)
@@ -336,16 +333,23 @@ def put_variable(name, value=Ref('previous_result')):
 
 
 @export
+def remove_element(element):
+    """ A very simple handler that just removes an element from a tree. """
+    lxml_utils.remove_elements(element)
+
+
+@export
 @singleton_handler
-def remove_elements(references, keep_children=False, clear_ref=True):
+def remove_elements(references, keep_children=False, preserve_text=True, clear_ref=True):
     """ Removes all elements from the document that are referenced in a list that is available
-        as ``references``. ``keep_children`` is passed to :func:`inxs.lxml_utils.remove_element`.
-        The reference list is cleared afterwards if ``clear_ref`` is ``True``.
+        as ``references``. ``keep_children`` and ``preserve_texte`` are passed to
+        :func:`inxs.lxml_utils.remove_element`. The reference list is cleared afterwards if
+        ``clear_ref`` is ``True``.
     """
     def handler(transformation):
         elements = transformation._available_symbols[references]
-        for element in elements:
-            lxml_utils.remove_element(element, keep_children=keep_children)
+        lxml_utils.remove_elements(*elements, keep_children=keep_children,
+                                   preserve_text=preserve_text)
         if clear_ref:
             elements.clear()
         return transformation.states.previous_result

@@ -1,4 +1,4 @@
-from itertools import permutations
+from itertools import product
 from types import SimpleNamespace
 
 from lxml import builder, etree
@@ -65,20 +65,21 @@ def test_pop_attribute():
     assert 'y' not in element.attrib
 
 
-@mark.parametrize('keep_children,clear_ref', permutations((True, False)))
-def test_remove_elements(keep_children, clear_ref):
+@mark.parametrize('keep_children,preserve_text,clear_ref', tuple(product((True, False), repeat=3)))
+def test_remove_elements(keep_children, preserve_text, clear_ref):
     e = builder.ElementMaker()
-    child = e.b()
-    target = e.a(child)
+    target = e.a('foo', e.b())
     root = e.root(target)
     trash_bin = [target]
     transformation = SimpleNamespace(_available_symbols={'trashbin': trash_bin},
                                      states=SimpleNamespace(previous_result=None))
-    lib.remove_elements('trashbin', keep_children, clear_ref)(transformation)
+    lib.remove_elements('trashbin', keep_children=keep_children, preserve_text=preserve_text,
+                        clear_ref=clear_ref)(transformation)
 
     assert not root.findall('a')
     assert keep_children == bool(root.findall('b'))
-    assert clear_ref == (not bool(trash_bin))
+    assert preserve_text == isinstance(root.text, str)
+    assert clear_ref == (not bool(trash_bin)), (clear_ref, trash_bin)
 
 
 @mark.parametrize('ns,expected', ((None, 'rosa'), ('spartakus', '{spartakus}rosa')))

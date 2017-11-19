@@ -44,14 +44,35 @@ def merge_nodes(src: etree._Element, dst: etree._Element):
         dst.append(deepcopy(child))
 
 
-def remove_element(element: etree._Element, keep_children=False) -> None:
-    """ Removes the given element from its tree. Unless ``keep_children`` is passed as ``True``,
-        its children vanish with it into void.
+def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_text=False) -> None:
+    """ Removes the given elements from its tree. Unless ``keep_children`` is passed as ``True``,
+        its children vanish with it into void. If ``preserve_text`` is ``True``, the text and tail
+        of a deleted element will be preserved either in its left sibling's tail or its parent's
+        text.
     """
-    if keep_children:
-        for child in element:
-            element.addprevious(child)
-    element.getparent().remove(element)
+    for element in elements:
+        if preserve_text:
+            previous = element.getprevious()
+            if previous is None:
+                parent = element.getparent()
+                if parent.text is None:
+                    parent.text = ''
+                if element.text:
+                    parent.text += element.text
+                if element.tail:
+                    parent.text += element.tail
+            else:
+                if previous.tail is None:
+                    previous.tail = ''
+                if element.text:
+                    previous.tail += element.text
+                if element.tail:
+                    previous.tail += element.tail
+
+        if keep_children:
+            for child in element:
+                element.addprevious(child)
+        element.getparent().remove(element)
 
 
 def subelement(element, *args, text=None, **kwargs):

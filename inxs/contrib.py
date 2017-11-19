@@ -6,7 +6,6 @@ from inxs import (
     TRAVERSE_DEPTH_FIRST, TRAVERSE_BOTTOM_TO_TOP, TRAVERSE_LEFT_TO_RIGHT, lib, Not, Rule,
     SkipToNextElement, Transformation
 )
-from inxs.lxml_utils import remove_element
 
 
 __all__ = []
@@ -28,7 +27,7 @@ def _append_tail_to_previous_in_stream(element, skip_elements):
 
 remove_empty_elements = Transformation(
     Rule(Not(lib.has_children, lib.has_text, lib.has_attributes, '/'),
-         (_append_tail_to_previous_in_stream, remove_element)),
+         (_append_tail_to_previous_in_stream, lib.remove_element)),
     name='remove_empty_elements', context={'skip_elements': []},
     traversal_order=TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP
 )
