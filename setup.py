@@ -11,6 +11,8 @@ from sys import version_info
 if version_info < (3, 6):
     raise RuntimeError("Requires Python 3.6 or later.")
 
+VERSION = '0.1b2.dev5'
+
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
@@ -77,7 +79,7 @@ class Install(lxmlInstall, install):
 
 setup(
     name='inxs',
-    version='0.1b2.dev4',
+    version=VERSION,
     description="A framework for XML transformations without boilerplate.",
     long_description=readme + '\n\n' + history,
     author="Frank Sachsenheim",
