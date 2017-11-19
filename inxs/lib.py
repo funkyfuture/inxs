@@ -14,7 +14,7 @@ functional to you, it doesn't need to be polished at that point.
 
 from copy import deepcopy
 import logging
-from typing import Callable, List
+from typing import Callable, Dict, List, Tuple
 
 from lxml import builder, etree
 
@@ -302,6 +302,12 @@ def pop_attribute(name):
 
 
 @export
+def prefix_attributes(prefix: str, *attributes: str):
+    """ Prefixes the ``attributes`` with ``prefix``. """
+    return rename_attributes({x: prefix + x for x in attributes})
+
+
+@export
 @singleton_handler
 def put_variable(name, value=Ref('previous_result')):
     """ Puts ``value``as ``name`` to the :term:`context` namespace, by default the value is
@@ -354,6 +360,21 @@ def remove_elements(references, keep_children=False, preserve_text=True, clear_r
             elements.clear()
         return transformation.states.previous_result
     return handler
+
+
+@singleton_handler
+def _rename_attributes(translation_map: Tuple[Tuple[str, str], ...]) -> Callable:
+    def handler(element) -> None:
+        for _from, to in translation_map:
+            element.attrib[to] = element.attrib.pop(_from)
+    return handler
+
+
+@export
+def rename_attributes(translation_map: Dict[str, str]) -> Callable:
+    """ Renames the attributes of an element according to the provided ``translation_table``
+        that consists of old name keys and new name values. """
+    return _rename_attributes(tuple((k, v) for k, v in translation_map.items()))
 
 
 @export
