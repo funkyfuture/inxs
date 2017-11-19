@@ -82,9 +82,8 @@ mods_name = Transformation(
          (lib.get_text, lib.sub(result, 'forename', text=prev))),
 
     Once(If(Ref('role'), op.eq, 'author'),
-         (lib.get_variable('result'),
-          lib.append('outer_context.titleStmt'),
-          lib.append('outer_context.biblFull_titleStmt'))),
+         (lib.append('outer_context.titleStmt', Ref('result'), copy_element=True),
+          lib.append('outer_context.biblFull_titleStmt', Ref('result'), copy_element=True))),
 
     common_rule_conditions=MODS_NAMESPACE,
     copy=False, result_object=None

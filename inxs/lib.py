@@ -46,14 +46,17 @@ def is_Ref(obj):
 
 @export
 @singleton_handler
-def append(name):
-    """ Appends the result of the previous :term:`handler function` to the object referenced by
-        ``name`` in the :term:`context` namespace.
+def append(name, symbol=Ref('previous_result'), copy_element=False):
+    """ Appends the object referenced by ``symbol`` (default: the result of the previous
+        :term:`handler function`) to the object referenced by ``name`` in the :term:`context`
+        namespace. If the object is an element and ``copy_element`` is ``True``, a copy is appended
+        to the target.
     """
-    def handler(context, previous_result):
-        if isinstance(previous_result, etree._Element):
-            previous_result = deepcopy(previous_result)
-        dot_lookup(context, name).append(previous_result)
+    def handler(context, previous_result, transformation):
+        obj = symbol(transformation)
+        if copy_element and isinstance(obj, etree._Element):
+            obj = deepcopy(obj)
+        dot_lookup(context, name).append(obj)
         return previous_result
     return handler
 
