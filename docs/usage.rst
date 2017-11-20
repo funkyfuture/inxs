@@ -117,7 +117,7 @@ Any transformation step, condition or handler can be grouped into :term:`sequenc
 code recycling - But don't take that as a permission to barbarously patching fragments of existing
 solutions together that you might feel are similar to your problem. It's taken care that the
 items are retained as when then a transformation was initialized if groups were :term:`mutable`
-types or :term:`generator` s.
+types.
 
 Now that the authoritarian part is reached, be advised that using expressive and unambiguous names
 is essential when designing transformations and their components. As a rule of thumb, a simple
