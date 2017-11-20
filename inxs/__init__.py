@@ -5,6 +5,7 @@
 
 from collections import ChainMap
 from copy import deepcopy
+import cssselect
 from functools import lru_cache
 import logging
 from os import getenv
@@ -102,15 +103,34 @@ def _condition_factory(condition: ConditionType) -> Callable:
             # assumes tag
             dbg("Adding {} as tag's local name condition.".format(condition))
             return HasLocalname(condition)
+        try:  # it may be a css selctor
+            _condition = _css_selector_translator(condition)
+        except cssselect.SelectorError:
+            pass
         else:
-            # assumes XPath
-            dbg('Adding {} as XPath condition.'.format(condition))
-            return MatchesXPath(condition)
+            dbg(f'Translated css selector {condition}` to XPath expression {_condition}.')
+            condition = _condition
+        # assumes XPath
+        dbg('Adding {} as XPath condition.'.format(condition))
+        return MatchesXPath(condition)
     elif isinstance(condition, Mapping):
         dbg('Adding {} as attribute condition.'.format(condition))
         return MatchesAttributes(condition)
     else:
         return condition
+
+
+class _CSSToXPathTranslator(cssselect.GenericTranslator):
+    def selector_to_xpath(self, *args, **kwargs):
+        result = super().selector_to_xpath(*args, **kwargs)
+        if result.startswith('descendant-or-self::'):
+            # though this should be equivalent, the abbreviated form proved
+            # to work in cases where the full wouldn't
+            result = result.replace('descendant-or-self::', '//', 1)
+        return result
+
+
+_css_selector_translator = _CSSToXPathTranslator().css_to_xpath
 
 
 def dot_lookup(obj: AnyType, name: str):

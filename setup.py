@@ -89,7 +89,7 @@ setup(
     package_dir={'inxs': 'inxs'},
     include_package_data=True,
     cmdclass={'develop': Develop, 'install': Install},
-    install_requires=['dependency_injection'],
+    install_requires=('cssselect', 'dependency_injection'),
     license="ISC license",
     zip_safe=False,
     entry_points={'console_scripts': ['inxs = inxs.cli:main']},

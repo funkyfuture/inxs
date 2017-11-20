@@ -167,7 +167,11 @@ Strings can be used to specify certain rule conditions:
 - ``*`` selects all elements - should only be used if there are no other conditions
 - any string that contains a colon (but not more that one consecutively) selects elements with
   a namespace that matches the string
-- strings that contain only letters select elements whose local name matches the string
+- strings that contain only letters select elements whose *local* name matches the string
+- if a string can be translated to an XPath expression with cssselect_ and thus can be considered a
+  valid css selector, the result is used like the following; mind that you can use
+  `namespace prefixes`_ if you know the prefixes, otherwise this is not an option to match an
+  element from a namespace that's not the :term:`transformation root`'s default
 - all other strings will select all elements that an XPath evaluation of that string on the
   :term:`transformation root` returns
 
@@ -176,6 +180,9 @@ Another shortcut is to pass a dictionary to test an element's attributes, see
 
 Speaking of conditions, see :func:`inxs.Any`, :func:`inxs.OneOf` and :func:`inxs.Not` to overcome
 the logical ``and`` evaluation of all tests.
+
+.. _cssselect: https://cssselect.readthedocs.io
+.. _namespace prefixes: https://cssselect.readthedocs.io/#namespaces
 
 
 Global configuration

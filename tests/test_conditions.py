@@ -66,6 +66,15 @@ def test_common_conditions():
     assert transformation(document) == ['foo', 'peng']
 
 
+def test_css_selector():
+    document = etree.fromstring('<table><head>Table Header</head></table>')
+    transformation = Transformation(
+        Rule('table > head', (lib.get_text, lib.put_variable('result'))),
+        result_object='context.result'
+    )
+    assert transformation(document) == 'Table Header'
+
+
 def test_If():
     def return_zero():
         return 0
