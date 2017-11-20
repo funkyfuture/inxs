@@ -176,7 +176,7 @@ def Any(*conditions: Sequence[ConditionType]) -> Callable:
     """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
         of them returned that.
     """
-    conditions = tuple(_condition_factory(x) for x in conditions)
+    conditions = tuple(_condition_factory(x) for x in _flatten_sequence(conditions))
 
     def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return any(x(element, transformation) for x in conditions)
@@ -187,7 +187,7 @@ def OneOf(*conditions: Sequence[ConditionType]) -> Callable:
     """ Returns a callable that evaluates the provided test functions and returns ``True`` if
         exactly one of them returned that.
     """
-    conditions = tuple(_condition_factory(x) for x in conditions)
+    conditions = tuple(_condition_factory(x) for x in _flatten_sequence(conditions))
 
     def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return [x(element, transformation) for x in conditions].count(True) == 1
@@ -198,7 +198,7 @@ def Not(*conditions: Sequence[ConditionType]) -> Callable:
     """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
         of them returned ``False``.
     """
-    conditions = tuple(_condition_factory(x) for x in conditions)
+    conditions = tuple(_condition_factory(x) for x in _flatten_sequence(conditions))
 
     def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return not any(x(element, transformation) for x in conditions)
