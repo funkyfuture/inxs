@@ -297,10 +297,30 @@ def merge(src='previous_result', dst='root'):
 
 @export
 @singleton_handler
-def pop_attribute(name):
+def pop_attribute(name: str):
     """ Pops the element's attribute named ``name``. """
-    def handler(element):
+    def handler(element) -> str:
         return element.attrib.pop(name)
+    return handler
+
+
+@export
+@singleton_handler
+def pop_attributes(*names: str, ignore_missing=False):
+    """ Pops all attributes with name from ``names`` and returns a mapping with names and values.
+        When ``ignore_missing`` is ``True`` ``KeyError``s pass silently. """
+    handlers = {x: pop_attribute(x) for x in names}
+    del names
+
+    def handler(element) -> Dict[str, str]:
+        result = {}
+        for name, _handler in handlers.items():
+            try:
+                result[name] = _handler(element)
+            except KeyError:
+                if not ignore_missing:
+                    raise
+        return result
     return handler
 
 
