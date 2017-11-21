@@ -441,6 +441,15 @@ def _traverse_root(root: etree._Element) -> Iterator[etree._Element]:
     yield root
 
 
+def _travers_wf_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
+    def yield_children(element):
+        yield from element.iterchildren()
+        for child in element.iterchildren():
+            yield from yield_children(child)
+    yield root
+    yield from yield_children(root)
+
+
 class Transformation:
     """ A transformation instance is defined by its :term:`transformation steps` and
         :term:`configuration`. It is to be called with an ``lxml`` representation of an XML element
@@ -490,7 +499,9 @@ class Transformation:
             _traverse_df_ltr_btt,
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
             _traverse_df_ltr_ttb,
-        TRAVERSE_ROOT_ONLY: _traverse_root
+        TRAVERSE_ROOT_ONLY: _traverse_root,
+        TRAVERSE_WIDTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
+            _travers_wf_ltr_ttb
     }
 
     def __init__(self, *steps: StepType, **config: AnyType) -> None:
