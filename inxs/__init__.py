@@ -84,6 +84,7 @@ class SkipToNextElement(FlowControl):
 
 AttributesConditionType = Union[Dict[Union[str, Pattern], Union[str, Pattern, None]], Callable]
 ConditionType = Union[Callable, AnyStr, AttributesConditionType]
+StepType = Union['Rule', Callable, Sequence['StepType']]
 
 
 # helpers
@@ -492,7 +493,7 @@ class Transformation:
         TRAVERSE_ROOT_ONLY: _traverse_root
     }
 
-    def __init__(self, *steps: Union[Rule, Callable], **config: AnyType) -> None:
+    def __init__(self, *steps: StepType, **config: AnyType) -> None:
         dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
         self.steps = _flatten_sequence(steps)
         self.config = SimpleNamespace(**config)
@@ -608,7 +609,7 @@ class Transformation:
         dbg('Using traverser: {}'.format(traverser))
 
         for element in traverser(self.states.root):
-            if isinstance(element, etree._Comment):
+            if element.tag is etree.Comment:
                 continue
             dbg('Evaluating {}.'.format(element))
             self.states.current_element = element

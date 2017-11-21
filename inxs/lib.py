@@ -308,7 +308,7 @@ def pop_attribute(name: str):
 @singleton_handler
 def pop_attributes(*names: str, ignore_missing=False):
     """ Pops all attributes with name from ``names`` and returns a mapping with names and values.
-        When ``ignore_missing`` is ``True`` ``KeyError``s pass silently. """
+        When ``ignore_missing`` is ``True`` ``KeyError`` exceptions pass silently. """
     handlers = {x: pop_attribute(x) for x in names}
     del names
 
