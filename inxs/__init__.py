@@ -11,12 +11,14 @@ import logging
 from os import getenv
 import pkg_resources
 from types import SimpleNamespace
-from typing import (AnyStr, Callable, Dict, Iterator, List, Mapping, Pattern,  # noqa: F401
+from typing import (AnyStr, Callable, Dict, List, Mapping, Pattern,  # noqa: F401
                     Sequence, Union)
 from typing import Any as AnyType
 
 import dependency_injection
 from lxml import etree
+
+from inxs import lxml_utils
 
 
 # constants
@@ -425,31 +427,6 @@ class Once(Rule):
 # transformation
 
 
-def _traverse_df_ltr_btt(root: etree._Element) -> Iterator[etree._Element]:
-    def yield_children(element):
-        for child in element:
-            yield from yield_children(child)
-        yield element
-    yield from yield_children(root)
-
-
-def _traverse_df_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
-    yield from root.iter()
-
-
-def _traverse_root(root: etree._Element) -> Iterator[etree._Element]:
-    yield root
-
-
-def _travers_wf_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
-    def yield_children(element):
-        yield from element.iterchildren()
-        for child in element.iterchildren():
-            yield from yield_children(child)
-    yield root
-    yield from yield_children(root)
-
-
 class Transformation:
     """ A transformation instance is defined by its :term:`transformation steps` and
         :term:`configuration`. It is to be called with an ``lxml`` representation of an XML element
@@ -496,12 +473,13 @@ class Transformation:
 
     traversers = {
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP:
-            _traverse_df_ltr_btt,
+            lxml_utils.traverse_df_ltr_btt,
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
-            _traverse_df_ltr_ttb,
-        TRAVERSE_ROOT_ONLY: _traverse_root,
+            lxml_utils.traverse_df_ltr_ttb,
+        TRAVERSE_ROOT_ONLY:
+            lxml_utils.traverse_root,
         TRAVERSE_WIDTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
-            _travers_wf_ltr_ttb
+            lxml_utils.traverse_wf_ltr_ttb
     }
 
     def __init__(self, *steps: StepType, **config: AnyType) -> None:

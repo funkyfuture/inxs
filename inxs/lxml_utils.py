@@ -1,5 +1,6 @@
 """ Some helper functions for ``lxml`` objects. """
 from copy import deepcopy
+from typing import Iterator
 
 from lxml import etree
 
@@ -89,3 +90,28 @@ def subelement(element, *args, text=None, **kwargs):
     result = etree.SubElement(element, *args, **kwargs)
     result.text = text
     return result
+
+
+def traverse_df_ltr_btt(root: etree._Element) -> Iterator[etree._Element]:
+    def yield_children(element):
+        for child in element:
+            yield from yield_children(child)
+        yield element
+    yield from yield_children(root)
+
+
+def traverse_df_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
+    yield from root.iter()
+
+
+def traverse_root(root: etree._Element) -> Iterator[etree._Element]:
+    yield root
+
+
+def traverse_wf_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
+    def yield_children(element):
+        yield from element.iterchildren()
+        for child in element.iterchildren():
+            yield from yield_children(child)
+    yield root
+    yield from yield_children(root)
