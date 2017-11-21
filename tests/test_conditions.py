@@ -66,13 +66,17 @@ def test_common_conditions():
     assert transformation(document) == ['foo', 'peng']
 
 
-def test_css_selector():
-    document = etree.fromstring('<table><head>Table Header</head></table>')
+@mark.parametrize('selector,expected', (('table > head', 'Table Header'),
+                                        ('table + cb', 'X'),
+                                        ('table ~ row', '#')))
+def test_css_selector(selector, expected):
+    document = etree.fromstring('<section xmlns="foo"><table><head>Table Header</head></table>'
+                                '<cb type="start">X</cb><row>#</row></section>')
     transformation = Transformation(
-        Rule('table > head', (lib.get_text, lib.put_variable('result'))),
+        Rule(selector, (lib.get_text, lib.put_variable('result'))),
         result_object='context.result'
     )
-    assert transformation(document) == 'Table Header'
+    assert transformation(document) == expected
 
 
 def test_If():
