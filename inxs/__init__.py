@@ -598,7 +598,7 @@ class Transformation:
         dbg('Using traverser: {}'.format(traverser))
 
         for element in traverser(self.states.root):
-            if element.tag is etree.Comment:
+            if element.tag is etree.Comment or element.tag is etree.Entity:
                 continue
             dbg('Evaluating {}.'.format(element))
             self.states.current_element = element
