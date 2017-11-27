@@ -129,6 +129,7 @@ def debug_symbols(*names):
     return handler
 
 
+# REMOVE?
 @export
 def drop_siblings(left_or_right):
     """ Removes all elements ``left`` or ``right`` of the processed element depending which
@@ -362,14 +363,15 @@ def put_variable(name, value=Ref('previous_result')):
 
 
 @export
-def remove_element(element):
+def remove_element(element):  # REMOVE?
     """ A very simple handler that just removes an element from a tree. """
     lxml_utils.remove_elements(element)
 
 
 @export
 @singleton_handler
-def remove_elements(references, keep_children=False, preserve_text=True, clear_ref=True):
+def remove_elements(references, keep_children=False, preserve_text=False, preserve_tail=False,
+                    clear_ref=True):
     """ Removes all elements from the document that are referenced in a list that is available
         as ``references``. ``keep_children`` and ``preserve_texte`` are passed to
         :func:`inxs.lxml_utils.remove_element`. The reference list is cleared afterwards if
@@ -378,7 +380,7 @@ def remove_elements(references, keep_children=False, preserve_text=True, clear_r
     def handler(transformation):
         elements = transformation._available_symbols[references]
         lxml_utils.remove_elements(*elements, keep_children=keep_children,
-                                   preserve_text=preserve_text)
+                                   preserve_text=preserve_text, preserve_tail=preserve_tail)
         if clear_ref:
             elements.clear()
         return transformation.states.previous_result

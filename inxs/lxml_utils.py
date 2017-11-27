@@ -45,38 +45,43 @@ def merge_nodes(src: etree._Element, dst: etree._Element):
         dst.append(deepcopy(child))
 
 
-def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_text=False) -> None:
+def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_text=False,
+                    preserve_tail=False) -> None:
     """ Removes the given elements from its tree. Unless ``keep_children`` is passed as ``True``,
         its children vanish with it into void. If ``preserve_text`` is ``True``, the text and tail
         of a deleted element will be preserved either in its left sibling's tail or its parent's
         text.
     """
     for element in elements:
-        if preserve_text:
+        if preserve_text and element.text:
             previous = element.getprevious()
             if previous is None:
                 parent = element.getparent()
                 if parent.text is None:
                     parent.text = ''
-                if element.text:
-                    parent.text += element.text
-                if element.tail:
-                    parent.text += element.tail
+                parent.text += element.text
             else:
-                if element.text:
+                if previous.tail is None:
+                    previous.tail = ''
+                previous.tail += element.text
+
+        if preserve_tail and element.tail:
+            previous = element.getprevious()
+            if previous is None:
+                parent = element.getparent()
+                if parent.text is None:
+                    parent.text = ''
+                parent.text += element.tail
+            else:
+                if len(element):
+                    if element[-1].tail is None:
+                        element[-1].tail = element.tail
+                    else:
+                        element[-1].tail += element.tail
+                else:
                     if previous.tail is None:
                         previous.tail = ''
-                    previous.tail += element.text
-                if element.tail:
-                    if len(element):
-                        if element[-1].tail is None:
-                            element[-1].tail = element.tail
-                        else:
-                            element[-1].tail += element.tail
-                    else:
-                        if previous.tail is None:
-                            previous.tail = ''
-                        previous.tail += element.tail
+                    previous.tail += element.tail
 
         if keep_children:
             for child in element:

@@ -74,7 +74,7 @@ def test_remove_elements(keep_children, preserve_text, clear_ref):
     transformation = SimpleNamespace(_available_symbols={'trashbin': trash_bin},
                                      states=SimpleNamespace(previous_result=None))
     lib.remove_elements('trashbin', keep_children=keep_children, preserve_text=preserve_text,
-                        clear_ref=clear_ref)(transformation)
+                        preserve_tail=True, clear_ref=clear_ref)(transformation)
 
     assert not root.findall('a')
     assert keep_children == bool(root.findall('b'))
