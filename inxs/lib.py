@@ -482,12 +482,18 @@ def set_localname(name):
 
 @export
 @singleton_handler
-def set_text(text):
-    """ Sets the element's text to the one provided as ``text``."""
-    def handler(element, previous_result):
+def set_text(text=Ref('previous_result')):
+    """ Sets the element's text to the one provided as ``text``, it can also be a
+        :func:`inxs.Ref`."""
+    def ref_handler(element, transformation):
+        element.text = text(transformation)
+        return transformation.states.previous_result
+
+    def static_handler(element, previous_result):
         element.text = text
         return previous_result
-    return handler
+
+    return ref_handler if is_Ref(text) else static_handler
 
 
 @export
