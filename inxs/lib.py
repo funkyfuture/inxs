@@ -99,10 +99,13 @@ def concatenate(*parts):
 @export
 @singleton_handler
 def debug_dump_document(name='tree'):
-    """ Dumps all contents of the element refrenced by ``name`` from the
+    """ Dumps all contents of the element referenced by ``name`` from the
         :attr:`inxs.Transformation._available_symbols` to the log at info level. """
     def handler(transformation):
-        nfo(etree.tostring(transformation._available_symbols[name]))
+        try:
+            nfo(etree.tounicode(transformation._available_symbols[name]))
+        except KeyError:
+            nfo(f"No symbol named '{name}' found.")
         return transformation.states.previous_result
     return handler
 
