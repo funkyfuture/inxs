@@ -2,7 +2,7 @@ from itertools import product
 from types import SimpleNamespace
 
 from lxml import builder, etree
-from pytest import mark
+from pytest import mark, raises
 
 from inxs import lib, Ref, Rule, Transformation
 from tests import equal_subtree
@@ -40,6 +40,10 @@ def test_has_tail():
     assert lib.has_tail(element, None)
 
 
+def test_get_variable():
+    assert lib.get_variable('foo')(SimpleNamespace(foo='bar')) == 'bar'
+
+
 @mark.parametrize('tag,namespace_s,nsmap',
                   (('foo', 'http://bar.org', {}),
                    ('bar:foo', {'bar': 'http://bar.org'}, {}),
@@ -65,6 +69,18 @@ def test_pop_attribute():
     assert 'y' not in element.attrib
 
 
+def test_pop_attributes():
+    element = etree.Element('x', {'x': '0', 'y': '1'})
+    assert lib.pop_attributes('x', 'y')(element) == {'x': '0', 'y': '1'}
+
+    element = etree.Element('x', {'x': '0'})
+    assert lib.pop_attributes('x', 'y', ignore_missing=True)(element) == {'x': '0'}
+
+    element = etree.Element('x', {'x': '0'})
+    with raises(KeyError):
+        lib.pop_attributes('x', 'y')(element)
+
+
 @mark.parametrize('keep_children,preserve_text,clear_ref', tuple(product((True, False), repeat=3)))
 def test_remove_elements(keep_children, preserve_text, clear_ref):
     e = builder.ElementMaker()
@@ -80,6 +96,37 @@ def test_remove_elements(keep_children, preserve_text, clear_ref):
     assert keep_children == bool(root.findall('b'))
     assert preserve_text == isinstance(root.text, str)
     assert clear_ref == (not bool(trash_bin)), (clear_ref, trash_bin)
+
+
+def test_rename_attributes():
+    element = etree.Element('x', {'x': '0', 'y': '1'})
+    lib.rename_attributes({'x': 'a', 'y': 'b'})(element)
+    assert element.attrib == {'a': '0', 'b': '1'}
+
+
+def test_replace_text():
+    element = etree.Element('x')
+    element.text, element.tail = ('foo', 'bar')
+    transformation = Transformation()
+    transformation.states = SimpleNamespace(previous_result=0)
+    lib.replace_text('foo', 'peng')(element, transformation)
+    lib.replace_text('bar', 'zack', tail=True)(element, transformation)
+    assert etree.tounicode(element) == '<x>peng</x>zack'
+
+
+def test_set_attribute():
+    element = etree.Element('x')
+    lib.set_attribute('y', 'z')(element, None)
+    assert element.attrib == {'y': 'z'}
+
+
+def test_set_text():
+    element = etree.Element('pre')
+    transformation = Transformation(
+        lib.put_variable('x', 'Hello world.'),
+        Rule('/', lib.set_text(Ref('x')))
+    )
+    assert etree.tounicode(transformation(element)) == '<pre>Hello world.</pre>'
 
 
 @mark.parametrize('ns,expected', ((None, 'rosa'), ('spartakus', '{spartakus}rosa')))

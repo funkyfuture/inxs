@@ -14,7 +14,7 @@ functional to you, it doesn't need to be polished at that point.
 
 from copy import deepcopy
 import logging
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Mapping, Tuple, Union
 
 from lxml import builder, etree
 
@@ -405,7 +405,7 @@ def _rename_attributes(translation_map: Tuple[Tuple[str, str], ...]) -> Callable
 
 
 @export
-def rename_attributes(translation_map: Dict[str, str]) -> Callable:
+def rename_attributes(translation_map: Mapping[str, str]) -> Callable:
     """ Renames the attributes of an element according to the provided ``translation_table``
         that consists of old name keys and new name values. """
     return _rename_attributes(tuple((k, v) for k, v in translation_map.items()))
@@ -426,6 +426,7 @@ def replace_text(old: Union[str, Callable], new: Union[str, Callable],
             element.text = element.text.replace(_old, _new)
         if tail and element.tail:
             element.tail = element.tail.replace(_old, _new)
+        return transformation.states.previous_result
     return handler
 
 
