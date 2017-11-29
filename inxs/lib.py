@@ -198,6 +198,12 @@ def get_localname(element):
 
 
 @export
+def get_tail(element):
+    """ Returns the tail of the matched element. """
+    return element.tail
+
+
+@export
 def get_text(element):
     """ Returns the text of the matched element. """
     return element.text
