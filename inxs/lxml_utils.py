@@ -111,12 +111,3 @@ def traverse_df_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
 
 def traverse_root(root: etree._Element) -> Iterator[etree._Element]:
     yield root
-
-
-def traverse_wf_ltr_ttb(root: etree._Element) -> Iterator[etree._Element]:
-    def yield_children(element):
-        yield from element.iterchildren()
-        for child in element.iterchildren():
-            yield from yield_children(child)
-    yield root
-    yield from yield_children(root)

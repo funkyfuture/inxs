@@ -478,8 +478,6 @@ class Transformation:
             lxml_utils.traverse_df_ltr_ttb,
         TRAVERSE_ROOT_ONLY:
             lxml_utils.traverse_root,
-        TRAVERSE_WIDTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
-            lxml_utils.traverse_wf_ltr_ttb
     }
 
     def __init__(self, *steps: StepType, **config: AnyType) -> None:
