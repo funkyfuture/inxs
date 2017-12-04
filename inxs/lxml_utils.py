@@ -56,6 +56,7 @@ def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_
         if preserve_text and element.text:
             previous = element.getprevious()
             if previous is None:
+
                 parent = element.getparent()
                 if parent.text is None:
                     parent.text = ''
@@ -67,22 +68,28 @@ def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_
                     previous.tail += element.text
 
         if preserve_tail and element.tail:
-            previous = element.getprevious()
-            if previous is None:
-                parent = element.getparent()
-                if parent.text is None:
-                    parent.text = ''
-                parent.text += element.tail
-            else:
-                if len(element):
-                    if element[-1].tail is None:
-                        element[-1].tail = element.tail
-                    else:
-                        element[-1].tail += element.tail
+            if keep_children and len(element):
+                if element[-1].tail:
+                    element[-1].tail += element.tail
                 else:
-                    if previous.tail is None:
-                        previous.tail = ''
-                    previous.tail += element.tail
+                    element[-1].tail = element.tail
+            else:
+                previous = element.getprevious()
+                if previous is None:
+                    parent = element.getparent()
+                    if parent.text is None:
+                        parent.text = ''
+                    parent.text += element.tail
+                else:
+                    if len(element):
+                        if element[-1].tail is None:
+                            element[-1].tail = element.tail
+                        else:
+                            element[-1].tail += element.tail
+                    else:
+                        if previous.tail is None:
+                            previous.tail = ''
+                        previous.tail += element.tail
 
         if keep_children:
             for child in element:

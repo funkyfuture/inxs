@@ -40,3 +40,12 @@ def test_remove_element_text_preservation_part_2():
     lxml_utils.remove_elements(d, keep_children=True, preserve_tail=True)
     result = etree.tounicode(fragment)
     assert result == '<root><a><c/></a>b<e/>ed</root>', result
+
+
+def test_remove_element_text_preservation_part_3():
+    fragment = etree.fromstring(
+        '<item><name><hi>Rosa</hi></name>, about Quark.</item>'
+    )
+    name = lxml_utils.find(fragment, 'name')
+    lxml_utils.remove_elements(name, keep_children=True, preserve_text=True, preserve_tail=True)
+    assert etree.tounicode(fragment) == '<item><hi>Rosa</hi>, about Quark.</item>', etree.tounicode(fragment)
