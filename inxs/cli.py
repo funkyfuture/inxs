@@ -20,7 +20,9 @@ from inxs.lib import dbg, logger, nfo
 def parse_args(args: Sequence[str]) -> Namespace:
     parser = ArgumentParser()
 
+    # TODO help texts
     parser.add_argument('--pretty', action='store_true', default=False)
+    parser.add_argument('--recover', action='store_true', default=False)
     parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('transformation')
     parser.add_argument('target')
@@ -76,14 +78,9 @@ def get_transformation(location: str) -> Transformation:
     return transformation_objects[transformation_name]
 
 
-def apply_transformation(transformation: Transformation, target: str) -> etree._ElementTree:
-    document = etree.parse(target)
-    copy_file(target, target + '.orig')
-    dbg("Saved document backup with suffix '.orig'")
-    dbg('Applying transformation.')
-    root = transformation(document.getroot())
-    document._setroot(root)
-    return document
+def parse_file(args: Namespace) -> etree._ElementTree:
+    parser = etree.XMLParser(recover=args.recover)
+    return etree.parse(args.target, parser=parser)
 
 
 def write_file(document: etree._ElementTree, args: Namespace) -> None:
@@ -104,8 +101,12 @@ def main(args: Sequence[str] = None) -> None:
         setup_logging(args.verbose)
         dbg(f'Invoked with args: {args}')
         transformation = get_transformation(args.transformation)
-        result = apply_transformation(transformation, args.target)
-        write_file(result, args)
+        document = parse_file(args)
+        copy_file(args.target, args.target + '.orig')
+        dbg("Saved document backup with suffix '.orig'")
+        dbg('Applying transformation.')
+        document._setroot(transformation(document.getroot()))
+        write_file(document, args)
     except Exception:
         print_exc()
         raise SystemExit(2)
