@@ -48,4 +48,5 @@ def test_remove_element_text_preservation_part_3():
     )
     name = lxml_utils.find(fragment, 'name')
     lxml_utils.remove_elements(name, keep_children=True, preserve_text=True, preserve_tail=True)
-    assert etree.tounicode(fragment) == '<item><hi>Rosa</hi>, about Quark.</item>', etree.tounicode(fragment)
+    assert etree.tounicode(fragment) == '<item><hi>Rosa</hi>, about Quark.</item>', \
+        etree.tounicode(fragment)
