@@ -11,7 +11,7 @@ from sys import version_info
 if version_info < (3, 6):
     raise RuntimeError("Requires Python 3.6 or later.")
 
-VERSION = '0.1b2.dev7'
+VERSION = '0.1b2.dev8'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -47,6 +47,8 @@ class lxmlInstall():
 
     @staticmethod
     def install_lxml():
+        # FIXME use verbosity levels from the invokation of this file
+        # FIXME check success of subprocesses and abort in case of failure
         try:
             import cython  # noqa: F401
         except ImportError:
