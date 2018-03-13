@@ -45,8 +45,14 @@ class lxmlInstall():
         else:
             return True
 
-    @staticmethod
-    def install_lxml():
+    def ensure_lxml_with_smart_prefix(self):
+        if not self.check_lxml():
+            self.install_lxml()
+        elif not self.check_smart_prefix():
+            pip(['uninstall', '--yes', '-v', 'lxml'])
+            self.install_lxml()
+
+    def install_lxml(self):
         # FIXME use verbosity levels from the invokation of this file
         # FIXME check success of subprocesses and abort in case of failure
         try:
@@ -62,21 +68,17 @@ class lxmlInstall():
         if not cython_was_installed:
             pip(['uninstall', '--yes', '-v', 'cython'])
 
+
+class Develop(lxmlInstall, develop):
     def run(self):
-        if not self.check_lxml():
-            self.install_lxml()
-        elif not self.check_smart_prefix():
-            pip(['uninstall', '--yes', '-v', 'lxml'])
-            self.install_lxml()
+        self.ensure_lxml_with_smart_prefix()
         super().run()
 
 
-class Develop(lxmlInstall, develop):
-    pass
-
-
 class Install(lxmlInstall, install):
-    pass
+    def run(self):
+        self.ensure_lxml_with_smart_prefix()
+        self.do_egg_install()
 
 
 setup(
@@ -108,5 +110,5 @@ setup(
         'Topic :: Text Processing :: Markup :: XML'
     ],
     test_suite='tests',
-    tests_require=['pytest']
+    tests_require=['pytest', 'pytest-runner']  # TODO full test cmd config
 )
