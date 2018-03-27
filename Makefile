@@ -36,7 +36,7 @@ clean-build: ## remove build artifacts
 	rm -fr .eggs/
 	rm -fr docs/_build/
 	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.egg' -exec rm -fr {} +
 	find . -name '*.orig' -exec rm -f {} +
 
 clean-pyc: ## remove Python file artifacts

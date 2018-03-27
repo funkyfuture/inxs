@@ -552,7 +552,10 @@ class Transformation:
                              context: Dict[AnyStr, AnyType]) -> None:
         dbg('Initializing processing.')
         if not isinstance(transformation_root, etree._Element):
-            raise RuntimeError('A transformation must be called with an lxml Element object.')
+            raise TypeError(
+                'A transformation must be called with an lxml Element object, got a '
+                f'{type(transformation_root)}.'
+            )
 
         self.states = SimpleNamespace()
         self.states.current_element = None

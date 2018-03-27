@@ -1,5 +1,5 @@
 """
-This module contains common functions that can be used for either :class:`Rule` s' tests, as
+This module contains common functions that can be used for either :class:`~inxs.Rule` s' tests, as
 handler functions or simple transformation steps.
 
 Community contributions are highly appreciated, but it's hard to layout hard criteria for what
