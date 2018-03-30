@@ -4,6 +4,23 @@ from typing import Iterator
 
 from lxml import etree
 
+from inxs import utils
+
+
+def extract_text(element: etree._Element, include_tail=False, reduce_whitespaces=True) -> str:
+    """ Returns all text that is contained in the given ``element`` including
+        its descendants. The element's tail is appended when ``include_tail``
+        is provided as ``True``, a boolean also toggles whether
+        :func:`~inxs.utils.reduce_whitespaces` shall be applied on the result.
+    """
+    result = ''
+    result += element.text or ''
+    for child in element:
+        result += extract_text(child, include_tail=True, reduce_whitespaces=False)
+    if include_tail:
+        result += element.tail or ''
+    return utils.reduce_whitespaces(result) if reduce_whitespaces else result
+
 
 def find(element, path):
     """ A helper function around a :attr:`lxml.etree._Element.find` that passes the element's

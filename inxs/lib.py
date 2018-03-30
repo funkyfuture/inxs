@@ -158,6 +158,17 @@ def drop_siblings(left_or_right):
 
 
 @export
+def extract_text(include_tail: bool = False, reduce_whitespace: bool = True):
+    """ Returns the extracted text by :func:`~inxs.lxml_utils.extract_text`. See its
+        docs regarding possible keyword arguments. """
+    def handler(element):
+        return lxml_utils.extract_text(
+            element, include_tail=include_tail, reduce_whitespaces=reduce_whitespace
+        )
+    return handler
+
+
+@export
 def f(func, *args, **kwargs):
     """ Wraps the callable ``func`` which will be called as ``func(*args, **kwargs)``, the function
         and any argument can be given as :func:`inxs.Ref`. """
@@ -255,6 +266,15 @@ def init_elementmaker(name: str = 'e', **kwargs):
         setattr(context, name, builder.ElementMaker(**kwargs))
         return previous_result
     return wrapped
+
+
+@export
+def join_to_string(separator: str = ' ', symbol='previous_result'):
+    """ Joins the object referenced by ``symbol`` around the given
+        ``separator`` and returns it. """
+    def handler(transformation):
+        return separator.join(transformation._available_symbols[symbol])
+    return handler
 
 
 @export
