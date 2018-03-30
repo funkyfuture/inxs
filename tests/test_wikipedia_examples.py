@@ -6,7 +6,6 @@ from inxs import lib, lxml_utils, Rule, Transformation
 
 from tests import equal_subtree, parse
 
-
 wp_document = parse("""
 <persons>
   <person username="JS1">
@@ -40,7 +39,8 @@ def test_wikipedia_example_1():
         Rule('person', (extract_person, append_person)),
         result_object='context.result', context={'result': etree.Element('root')})
 
-    # that's five (or not counting line-breaks: nine) lines less sloc than the XSLT implementation
+    # that's five (or not counting line-breaks: nine) lines less sloc than the XSLT
+    # implementation
 
     assert equal_subtree(transformation(wp_document), expected)
 

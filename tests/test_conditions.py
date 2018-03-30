@@ -4,8 +4,9 @@ import re
 from lxml import etree
 from pytest import mark
 
-from inxs import *
-from inxs import lib
+from inxs import (
+    Any, If, lib, MatchesAttributes, MatchesXPath, Not, OneOf, Rule, Transformation
+)
 
 
 def test_Any():
@@ -57,7 +58,8 @@ def test_attributes_re_key(constraint, expected):
 
 
 def test_common_conditions():
-    document = etree.fromstring('<root><a href="foo"/><a id="bar"/><a href="peng"/></root>')
+    document = etree.fromstring(
+        '<root><a href="foo"/><a id="bar"/><a href="peng"/></root>')
     transformation = Transformation(
         Rule('*', (lib.get_attribute('href'), lib.append('references'))),
         common_rule_conditions={'href': None},
@@ -70,8 +72,10 @@ def test_common_conditions():
                                         ('table + cb', 'X'),
                                         ('table ~ row', '#')))
 def test_css_selector(selector, expected):
-    document = etree.fromstring('<section xmlns="foo"><table><head>Table Header</head></table>'
-                                '<cb type="start">X</cb><row>#</row></section>')
+    document = etree.fromstring(
+        '<section xmlns="foo"><table><head>Table Header</head></table>'
+        '<cb type="start">X</cb><row>#</row></section>'
+    )
     transformation = Transformation(
         Rule(selector, (lib.get_text, lib.put_variable('result'))),
         result_object='context.result'

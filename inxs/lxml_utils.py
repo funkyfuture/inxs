@@ -7,11 +7,12 @@ from lxml import etree
 from inxs import utils
 
 
-def extract_text(element: etree._Element, include_tail=False, reduce_whitespaces=True) -> str:
-    """ Returns all text that is contained in the given ``element`` including
-        its descendants. The element's tail is appended when ``include_tail``
-        is provided as ``True``, a boolean also toggles whether
-        :func:`~inxs.utils.reduce_whitespaces` shall be applied on the result.
+def extract_text(element: etree._Element, include_tail=False,
+                 reduce_whitespaces=True) -> str:
+    """ Returns all text that is contained in the given ``element`` including its
+        descendants. The element's tail is appended when ``include_tail`` is provided as
+        ``True``, a boolean also toggles whether :func:`~inxs.utils.reduce_whitespaces`
+        shall be applied on the result.
     """
     result = ''
     result += element.text or ''
@@ -23,26 +24,26 @@ def extract_text(element: etree._Element, include_tail=False, reduce_whitespaces
 
 
 def find(element, path):
-    """ A helper function around a :attr:`lxml.etree._Element.find` that passes the element's
-        namespace mapping.
+    """ A helper function around a :attr:`lxml.etree._Element.find` that passes the
+        element's namespace mapping.
     """
     return element.find(path, namespaces=element.nsmap)
 
 
 def is_root_element(element: etree._Element) -> bool:
     """ Tests whether the given element is the root of the tree object.
-        Not to be mixed up with the root element of a possible sub-document a transformation may
-        be called with.
+        Not to be mixed up with the :term:`transformation root`.
     """
     return element is element.getroottree().getroot()
 
 
 def merge_nodes(src: etree._Element, dst: etree._Element):
-    """ Merges the node ``src`` including their subelements to ``dst``. The
-        Nodes are considered as equal - and thus merged - if their fully qualified names are
+    """ Merges the node ``src`` including their subelements to ``dst``. The nodes are
+        considered as equal - and thus merged - if their fully qualified names are
         identical.
         Different matching and merging strategies will be added as needed.
     """
+
     def child_with_qname(element: etree._Element, qname: etree.QName):
         for child in element.iterchildren(qname.text):
             if etree.QName(child).text == qname.text:
@@ -62,12 +63,13 @@ def merge_nodes(src: etree._Element, dst: etree._Element):
         dst.append(deepcopy(child))
 
 
-def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_text=False,
+def remove_elements(*elements: etree.ElementBase, keep_children=False,
+                    preserve_text=False,
                     preserve_tail=False) -> None:
-    """ Removes the given elements from its tree. Unless ``keep_children`` is passed as ``True``,
-        its children vanish with it into void. If ``preserve_text`` is ``True``, the text and tail
-        of a deleted element will be preserved either in its left sibling's tail or its parent's
-        text.
+    """ Removes the given elements from its tree. Unless ``keep_children`` is passed
+        as ``True``, its children vanish with it into void. If ``preserve_text`` is
+        ``True``, the text and tail of a deleted element will be preserved either in its
+        left sibling's tail or its parent's text.
     """
     for element in elements:
         if preserve_text and element.text:
@@ -115,8 +117,8 @@ def remove_elements(*elements: etree.ElementBase, keep_children=False, preserve_
 
 
 def subelement(element, *args, text=None, **kwargs):
-    """ A convenience wrapper around :func:`lxml.etree.SubElement` that takes an additional
-        keyword argument ``text`` to set the created element's text. """
+    """ A convenience wrapper around :func:`lxml.etree.SubElement` that takes an
+        additional keyword argument ``text`` to set the created element's text. """
     result = etree.SubElement(element, *args, **kwargs)
     result.text = text
     return result
@@ -127,6 +129,7 @@ def traverse_df_ltr_btt(root: etree._Element) -> Iterator[etree._Element]:
         for child in element:
             yield from yield_children(child)
         yield element
+
     yield from yield_children(root)
 
 

@@ -81,7 +81,8 @@ def test_pop_attributes():
         lib.pop_attributes('x', 'y')(element)
 
 
-@mark.parametrize('keep_children,preserve_text,clear_ref', tuple(product((True, False), repeat=3)))
+@mark.parametrize('keep_children,preserve_text,clear_ref',
+                  tuple(product((True, False), repeat=3)))
 def test_remove_elements(keep_children, preserve_text, clear_ref):
     e = builder.ElementMaker()
     target = e.a('foo', e.b())
@@ -89,7 +90,8 @@ def test_remove_elements(keep_children, preserve_text, clear_ref):
     trash_bin = [target]
     transformation = SimpleNamespace(_available_symbols={'trashbin': trash_bin},
                                      states=SimpleNamespace(previous_result=None))
-    lib.remove_elements('trashbin', keep_children=keep_children, preserve_text=preserve_text,
+    lib.remove_elements('trashbin', keep_children=keep_children,
+                        preserve_text=preserve_text,
                         preserve_tail=True, clear_ref=clear_ref)(transformation)
 
     assert not root.findall('a')

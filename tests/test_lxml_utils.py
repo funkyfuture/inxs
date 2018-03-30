@@ -5,7 +5,8 @@ from inxs import lxml_utils
 
 def test_remove_element_text_preservation():
     fragment = etree.fromstring(
-        '<root><hi>Published in</hi> <docDate>late <hi>February</hi> 1848</docDate><lb/>.</root>'
+        '<root><hi>Published in</hi> <docDate>late <hi>February</hi> '
+        '1848</docDate><lb/>.</root>'
     )
 
     lb = lxml_utils.find(fragment, 'lb')
@@ -18,10 +19,12 @@ def test_remove_element_text_preservation():
     lxml_utils.remove_elements(doc_date, keep_children=True,
                                preserve_text=True, preserve_tail=True)
     result = etree.tounicode(fragment)
-    assert result == '<root><hi>Published in</hi> late <hi>February</hi> 1848</root>', result
+    assert result == '<root><hi>Published in</hi> late <hi>February</hi> ' \
+                     '1848</root>', result
 
     hi = lxml_utils.find(fragment, 'hi')
-    lxml_utils.remove_elements(hi, keep_children=False, preserve_text=True, preserve_tail=True)
+    lxml_utils.remove_elements(hi, keep_children=False, preserve_text=True,
+                               preserve_tail=True)
     result = etree.tounicode(fragment)
     assert result == '<root>Published in late <hi>February</hi> 1848</root>', result
 
@@ -47,6 +50,7 @@ def test_remove_element_text_preservation_part_3():
         '<item><name><hi>Rosa</hi></name>, about Quark.</item>'
     )
     name = lxml_utils.find(fragment, 'name')
-    lxml_utils.remove_elements(name, keep_children=True, preserve_text=True, preserve_tail=True)
+    lxml_utils.remove_elements(name, keep_children=True, preserve_text=True,
+                               preserve_tail=True)
     assert etree.tounicode(fragment) == '<item><hi>Rosa</hi>, about Quark.</item>', \
         etree.tounicode(fragment)

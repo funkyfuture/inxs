@@ -2,13 +2,13 @@
 # TODO allow passing arguments
 
 
-from argparse import ArgumentParser, Namespace
-from traceback import print_exc
-import importlib.util
+import importlib
 import logging
+import sys
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from shutil import copy2 as copy_file
-import sys
+from traceback import print_exc
 from typing import Sequence
 
 from lxml import etree
@@ -51,7 +51,8 @@ def get_transformation(location: str) -> Transformation:
     dbg(f'Transformation module path: {module_path}')
 
     dbg('Loading module.')
-    module_spec = importlib.util.spec_from_file_location('transformation_file', module_path)
+    module_spec = importlib.util.spec_from_file_location('transformation_file',
+                                                         module_path)
     _module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(_module)
 
@@ -114,6 +115,5 @@ def main(args: Sequence[str] = None) -> None:
 
 if __name__ == '__main__':
     main()
-
 
 __all__ = [main.__name__]

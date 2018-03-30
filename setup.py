@@ -7,7 +7,6 @@ from setuptools.command.develop import develop
 from setuptools.command.install import install
 from sys import version_info
 
-
 if version_info < (3, 6):
     raise RuntimeError("Requires Python 3.6 or later.")
 
@@ -63,7 +62,8 @@ class lxmlInstall():
         else:
             cython_was_installed = True
 
-        pip(['install', '-v', 'https://github.com/funkyfuture/lxml/tarball/smart_xpath#egg=lxml'])
+        pip(['install', '-v',
+             'https://github.com/funkyfuture/lxml/tarball/smart_xpath#egg=lxml'])
 
         if not cython_was_installed:
             pip(['uninstall', '--yes', '-v', 'cython'])

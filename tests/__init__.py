@@ -1,6 +1,5 @@
 from lxml import etree
 
-
 xml_parser = etree.XMLParser(remove_blank_text=True)
 
 
@@ -32,7 +31,8 @@ def equal_subtree(element, other_element, ignore_whitespaces=False):
         '{} != {}'.format(element.tail, other_element.tail)
     assert len(element) == len(other_element), \
         '{}: {} / {}'.format(element.tag, len(element), len(other_element))
-    assert all(equal_subtree(x, y, ignore_whitespaces) for x, y in zip(element, other_element))
+    assert all(
+        equal_subtree(x, y, ignore_whitespaces) for x, y in zip(element, other_element))
     return True
 
 

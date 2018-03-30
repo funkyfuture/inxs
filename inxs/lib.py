@@ -1,24 +1,26 @@
 """
-This module contains common functions that can be used for either :class:`~inxs.Rule` s' tests, as
-handler functions or simple transformation steps.
+This module contains common functions that can be used for either :class:`~inxs.Rule`
+s' tests, as handler functions or simple transformation steps.
 
-Community contributions are highly appreciated, but it's hard to layout hard criteria for what
-belongs here and what not. In doubt open a pull request with your proposal as far as it proved
-functional to you, it doesn't need to be polished at that point.
+Community contributions are highly appreciated, but it's hard to layout hard criteria
+for what belongs here and what not. In doubt open a pull request with your proposal
+as far as it proved functional to you, it doesn't need to be polished at that point.
 """
-
 
 # TODO indicate use area in function's docstrings; and whether they return something
 # TODO delete unneeded symbols in setup functions' locals
 
 
-from copy import deepcopy
 import logging
+from copy import deepcopy
 from typing import Callable, Dict, List, Mapping, Tuple, Union
 
 from lxml import builder, etree
 
-from inxs import dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE, singleton_handler
+from inxs import (
+    dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE,
+    singleton_handler,
+)
 
 # helpers
 
@@ -26,7 +28,6 @@ from inxs import dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE, singlet
 logger = logging.getLogger(__name__)
 dbg = logger.debug
 nfo = logger.info
-
 
 __all__ = []
 
@@ -48,24 +49,24 @@ def is_Ref(obj):
 @singleton_handler
 def append(name, symbol=Ref('previous_result'), copy_element=False):
     """ Appends the object referenced by ``symbol`` (default: the result of the previous
-        :term:`handler function`) to the object referenced by ``name`` in the :term:`context`
-        namespace. If the object is an element and ``copy_element`` is ``True``, a copy is appended
-        to the target.
-    """
+        :term:`handler function`) to the object referenced by ``name`` in the
+        :term:`context` namespace. If the object is an element and ``copy_element`` is
+        ``True``, a copy is appended to the target. """
+
     def handler(context, previous_result, transformation):
         obj = symbol(transformation)
         if copy_element and isinstance(obj, etree._Element):
             obj = deepcopy(obj)
         dot_lookup(context, name).append(obj)
         return previous_result
+
     return handler
 
 
 @export
 def cleanup_namespaces(root, previous_result):
-    """ Cleanup the namespaces of the root element. This should always be used at the end of a
-        transformation when elements' namespaces have been changed.
-    """
+    """ Cleanup the namespaces of the root element. This should always be used at the
+        end of a transformation when elements' namespaces have been changed. """
     etree.cleanup_namespaces(root)
     return previous_result
 
@@ -80,8 +81,9 @@ def clear_attributes(element, previous_result):
 @export
 @singleton_handler
 def concatenate(*parts):
-    """ Concatenate the given parts which may be lists or strings as well as callables returning
-        such. """
+    """ Concatenate the given parts which may be lists or strings as well as callables
+        returning such. """
+
     def handler(transformation) -> str:
         result = ''
         for part in parts:
@@ -93,6 +95,7 @@ def concatenate(*parts):
                 raise RuntimeError('Unhandled type: {}'.format(type(part)))
             result += _part
         return result
+
     return handler
 
 
@@ -101,12 +104,14 @@ def concatenate(*parts):
 def debug_dump_document(name='tree'):
     """ Dumps all contents of the element referenced by ``name`` from the
         :attr:`inxs.Transformation._available_symbols` to the log at info level. """
+
     def handler(transformation):
         try:
             nfo(etree.tounicode(transformation._available_symbols[name]))
         except KeyError:
             nfo(f"No symbol named '{name}' found.")
         return transformation.states.previous_result
+
     return handler
 
 
@@ -114,9 +119,11 @@ def debug_dump_document(name='tree'):
 @singleton_handler
 def debug_message(msg):
     """ Logs the provided message at info level. """
+
     def handler(previous_result):
         nfo(msg)
         return previous_result
+
     return handler
 
 
@@ -125,20 +132,22 @@ def debug_message(msg):
 def debug_symbols(*names):
     """ Logs the representation strings of the objects referenced by ``names`` in
         :attr:`inxs.Transformation._available_symbols` at info level. """
+
     def handler(transformation):
         for name in names:
             nfo(f'symbol {name}: {transformation._available_symbols[name]!r}')
         return transformation.states.previous_result
+
     return handler
 
 
 # REMOVE?
 @export
 def drop_siblings(left_or_right):
-    """ Removes all elements ``left`` or ``right`` of the processed element depending which
-        keyword was given. The same is applied to all ancestors. Think of it like cutting a hedge
-        from one side. It can be used as a processing step to strip the document to a chunk
-        between two elements that don't have the same parent node.
+    """ Removes all elements ``left`` or ``right`` of the processed element depending
+        which keyword was given. The same is applied to all ancestors. Think of it like
+        cutting a hedge from one side. It can be used as a processing step to strip the
+        document to a chunk between two elements that don't have the same parent node.
     """
     if left_or_right == 'left':
         preceding = True
@@ -154,6 +163,7 @@ def drop_siblings(left_or_right):
         parent = element.getparent()
         if parent is not None:
             processor(parent)
+
     return processor
 
 
@@ -161,17 +171,20 @@ def drop_siblings(left_or_right):
 def extract_text(include_tail: bool = False, reduce_whitespace: bool = True):
     """ Returns the extracted text by :func:`~inxs.lxml_utils.extract_text`. See its
         docs regarding possible keyword arguments. """
+
     def handler(element):
         return lxml_utils.extract_text(
             element, include_tail=include_tail, reduce_whitespaces=reduce_whitespace
         )
+
     return handler
 
 
 @export
 def f(func, *args, **kwargs):
-    """ Wraps the callable ``func`` which will be called as ``func(*args, **kwargs)``, the function
-        and any argument can be given as :func:`inxs.Ref`. """
+    """ Wraps the callable ``func`` which will be called as ``func(*args, **kwargs)``,
+        the function and any argument can be given as :func:`inxs.Ref`. """
+
     def wrapper(transformation):
         if is_Ref(func):
             _func = func(transformation)
@@ -190,6 +203,7 @@ def f(func, *args, **kwargs):
             else:
                 _kwargs[key] = value
         return _func(*_args, **_kwargs)
+
     return wrapper
 
 
@@ -197,8 +211,10 @@ def f(func, *args, **kwargs):
 @singleton_handler
 def get_attribute(name):
     """ Gets the value of the element's attribute named ``name``. """
+
     def evaluator(element):
         return element.attrib.get(name)
+
     return evaluator
 
 
@@ -223,10 +239,12 @@ def get_text(element):
 @export
 @singleton_handler
 def get_variable(name):
-    """ Gets the object referenced as ``name`` from the :term:`context`. It is then available as
-        symbol ``previous_result``. """
+    """ Gets the object referenced as ``name`` from the :term:`context`. It is then
+        available as symbol ``previous_result``. """
+
     def handler(context):
         return dot_lookup(context, name)
+
     return handler
 
 
@@ -256,15 +274,15 @@ def has_text(element, _):
 
 @export
 def init_elementmaker(name: str = 'e', **kwargs):
-    """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context. ``kwargs`` for its
-        initialization can be passed.
-    """
+    """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context.
+        ``kwargs`` for its initialization can be passed. """
     if 'namespace' in kwargs and 'nsmap' not in kwargs:
         kwargs['nsmap'] = {None: kwargs['namespace']}
 
     def wrapped(context, previous_result):
         setattr(context, name, builder.ElementMaker(**kwargs))
         return previous_result
+
     return wrapped
 
 
@@ -272,8 +290,10 @@ def init_elementmaker(name: str = 'e', **kwargs):
 def join_to_string(separator: str = ' ', symbol='previous_result'):
     """ Joins the object referenced by ``symbol`` around the given
         ``separator`` and returns it. """
+
     def handler(transformation):
         return separator.join(transformation._available_symbols[symbol])
+
     return handler
 
 
@@ -285,10 +305,12 @@ def lowercase(previous_result):
 
 @export
 def make_element(tag, namespace_s=None):
-    """ This handler creates an empty element with the given ``tag``. The tag can have a prefix.
-        If ``namespace_s`` is ``None`` the namespace mapping of the :term:`transformation root`
-        is used as context. If given as :term:`mapping`, this is used as context.
-        It can also be provided as string, which is then used as default namespace. """
+    """ This handler creates an empty element with the given ``tag``. The tag can
+        have a prefix. If ``namespace_s`` is ``None`` the namespace mapping of the
+        :term:`transformation root` is used as context. If given as :term:`mapping`,
+        this is used as context. It can also be provided as string, which is then used
+        as default namespace. """
+
     def handler(transformation, nsmap):
         if is_Ref(tag):
             _tag = tag(transformation)
@@ -307,6 +329,7 @@ def make_element(tag, namespace_s=None):
                 prefix, _tag = _tag.split(':', 1)
                 _tag = '{' + _namespace_s[prefix] + '}' + _tag
             return etree.Element(_tag, nsmap=_namespace_s)
+
     return handler
 
 
@@ -314,14 +337,15 @@ def make_element(tag, namespace_s=None):
 @singleton_handler
 def merge(src='previous_result', dst='root'):
     """ A wrapper around :func:`inxs.lxml_util.merge_nodes` that passes the objects
-        referenced by ``src`` and ``dst``.
-    """
+        referenced by ``src`` and ``dst``. """
+
     def handler(transformation):
         _src = transformation._available_symbols[src]
         _dst = transformation._available_symbols[dst]
         assert etree.QName(_src).text == etree.QName(_dst).text, \
             f'{etree.QName(_src).text} != {etree.QName(_dst).text}'
         lxml_utils.merge_nodes(_src, _dst)
+
     return handler
 
 
@@ -329,16 +353,19 @@ def merge(src='previous_result', dst='root'):
 @singleton_handler
 def pop_attribute(name: str):
     """ Pops the element's attribute named ``name``. """
+
     def handler(element) -> str:
         return element.attrib.pop(name)
+
     return handler
 
 
 @export
 @singleton_handler
 def pop_attributes(*names: str, ignore_missing=False):
-    """ Pops all attributes with name from ``names`` and returns a mapping with names and values.
-        When ``ignore_missing`` is ``True`` ``KeyError`` exceptions pass silently. """
+    """ Pops all attributes with name from ``names`` and returns a mapping with names
+        and values. When ``ignore_missing`` is ``True`` ``KeyError`` exceptions pass
+        silently. """
     handlers = {x: pop_attribute(x) for x in names}
     del names
 
@@ -351,6 +378,7 @@ def pop_attributes(*names: str, ignore_missing=False):
                 if not ignore_missing:
                     raise
         return result
+
     return handler
 
 
@@ -363,8 +391,9 @@ def prefix_attributes(prefix: str, *attributes: str):
 @export
 @singleton_handler
 def put_variable(name, value=Ref('previous_result')):
-    """ Puts ``value``as ``name`` to the :term:`context` namespace, by default the value is
-        determined by a :func:`inxs.Ref` to ``previous_result``. """
+    """ Puts ``value``as ``name`` to the :term:`context` namespace, by default the
+        value is determined by a :func:`inxs.Ref` to ``previous_result``. """
+
     def ref_handler(transformation):
         setattr(transformation.context, name, value(transformation))
         return transformation.states.previous_result
@@ -399,20 +428,25 @@ def remove_element(element):  # REMOVE?
 
 @export
 @singleton_handler
-def remove_elements(references, keep_children=False, preserve_text=False, preserve_tail=False,
+def remove_elements(references, keep_children=False, preserve_text=False,
+                    preserve_tail=False,
                     clear_ref=True):
-    """ Removes all elements from the document that are referenced in a list that is available
-        as ``references``. ``keep_children`` and ``preserve_texte`` are passed to
-        :func:`inxs.lxml_utils.remove_element`. The reference list is cleared afterwards if
-        ``clear_ref`` is ``True``.
-    """
+    """ Removes all elements from the document that are referenced in a list that is
+        available as ``references``. ``keep_children`` and ``preserve_texte`` are
+        passed to
+        :func:`inxs.lxml_utils.remove_element`. The reference list is cleared
+        afterwards if
+        ``clear_ref`` is ``True``. """
+
     def handler(transformation):
         elements = transformation._available_symbols[references]
         lxml_utils.remove_elements(*elements, keep_children=keep_children,
-                                   preserve_text=preserve_text, preserve_tail=preserve_tail)
+                                   preserve_text=preserve_text,
+                                   preserve_tail=preserve_tail)
         if clear_ref:
             elements.clear()
         return transformation.states.previous_result
+
     return handler
 
 
@@ -421,13 +455,14 @@ def _rename_attributes(translation_map: Tuple[Tuple[str, str], ...]) -> Callable
     def handler(element) -> None:
         for _from, to in translation_map:
             element.attrib[to] = element.attrib.pop(_from)
+
     return handler
 
 
 @export
 def rename_attributes(translation_map: Mapping[str, str]) -> Callable:
-    """ Renames the attributes of an element according to the provided ``translation_table``
-        that consists of old name keys and new name values. """
+    """ Renames the attributes of an element according to the provided
+        ``translation_table`` that consists of old name keys and new name values. """
     return _rename_attributes(tuple((k, v) for k, v in translation_map.items()))
 
 
@@ -435,9 +470,11 @@ def rename_attributes(translation_map: Mapping[str, str]) -> Callable:
 @singleton_handler
 def replace_text(old: Union[str, Callable], new: Union[str, Callable],
                  text=True, tail=False) -> Callable:
-    """ Replaces the substring ``old`` in an element's text and tail (depending on the boolean
-        arguments with that name) with the string given as ``new``, both strings can be provided as
-        references to a transformation's symbols. """
+    """ Replaces the substring ``old`` in an element's text and tail (depending on
+        the boolean arguments with that name) with the string given as ``new``,
+        both strings can
+        be provided as references to a transformation's symbols. """
+
     # TODO input type specialized handlers
     def handler(element, transformation):
         _old = old(transformation) if is_Ref(old) else old
@@ -447,17 +484,20 @@ def replace_text(old: Union[str, Callable], new: Union[str, Callable],
         if tail and element.tail:
             element.tail = element.tail.replace(_old, _new)
         return transformation.states.previous_result
+
     return handler
 
 
 @export
 @singleton_handler
 def resolve_xpath_to_element(*names):
-    """ Resolves the objects from the context (which are supposed to be XPath expressions)
-        referenced by ``names`` with the *one* element that the XPaths yield or ``None``. This is
-        useful when a copied tree is processed and 'XPath pointers' are passed to the
-        :term:`context` when a :class:`inxs.Transformation` is called.
-    """
+    """ Resolves the objects from the context (which are supposed to be XPath
+        expressions) referenced by ``names`` with the *one* element that the XPaths
+        yield or
+        ``None``. This is useful when a copied tree is processed and 'XPath pointers'
+        are passed to the
+        :term:`context` when a :class:`inxs.Transformation` is called. """
+
     def resolver(context, transformation):
         for name in names:
             xpath = getattr(context, name)
@@ -472,6 +512,7 @@ def resolve_xpath_to_element(*names):
             else:
                 raise RuntimeError('More than one element matched {}'.format(xpath))
         return transformation.states.previous_result
+
     return resolver
 
 
@@ -479,10 +520,12 @@ def resolve_xpath_to_element(*names):
 @singleton_handler
 def set_attribute(name, value):
     """ Sets an attribute ``name`` with ``value``. """
+
     # TODO Ref resolving
     def handler(element, previous_result):
         element.attrib[name] = value
         return previous_result
+
     return handler
 
 
@@ -490,6 +533,7 @@ def set_attribute(name, value):
 @singleton_handler
 def set_localname(name):
     """ Sets the element's localname to ``name``. """
+
     def handler(element, previous_result):
         namespace = etree.QName(element).namespace
         if namespace is None:
@@ -498,6 +542,7 @@ def set_localname(name):
             qname = etree.QName(namespace, name)
         element.tag = qname.text
         return previous_result
+
     return handler
 
 
@@ -506,6 +551,7 @@ def set_localname(name):
 def set_text(text=Ref('previous_result')):
     """ Sets the element's text to the one provided as ``text``, it can also be a
         :func:`inxs.Ref`."""
+
     def ref_handler(element, transformation):
         element.text = text(transformation)
         return transformation.states.previous_result
@@ -521,10 +567,11 @@ def set_text(text=Ref('previous_result')):
 @singleton_handler
 def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
     """ Sorts the object referenced by ``name`` in the :term:`context` using ``key`` as
-        :term:`key function`.
-    """
+        :term:`key function`. """
+
     def handler(context):
         return sorted(getattr(context, name), key=key)
+
     return handler
 
 
@@ -532,18 +579,20 @@ def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
 @singleton_handler
 def strip_attributes(*names):
     """ Strips all attributes with the keys provided as ``names`` from the element. """
+
     def handler(element, previous_result):
         for name in names:
             element.attrib.pop(name, None)
         return previous_result
+
     return handler
 
 
 @export
 def strip_namespace(element, previous_result):
     """ Removes the namespace from the element.
-        When used, :func:`cleanup_namespaces` should be applied at the end of the transformation.
-    """
+        When used, :func:`cleanup_namespaces` should be applied at the end of the
+        transformation. """
     element.tag = etree.QName(element).localname
     return previous_result
 
@@ -559,6 +608,8 @@ def sub(*args, **kwargs):
 @singleton_handler
 def text_equals(text):
     """ Tests whether the evaluated element's text matches ``text``. """
+
     def evaluator(element, _):
         return element.text == text
+
     return evaluator

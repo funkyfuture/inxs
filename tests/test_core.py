@@ -5,7 +5,10 @@ from types import SimpleNamespace
 from lxml import etree
 from pytest import mark
 
-from inxs import *
+from inxs import (
+    __version__, AbortRule, AbortTransformation, If, Not, Ref, Rule, SkipToNextElement,
+    Transformation,
+)
 from inxs import lib
 
 
@@ -48,6 +51,7 @@ def test_grouped_steps():
     def append_to_list(value):
         def appender(list):
             list.append(value)
+
         return appender
 
     stpgrp_c = (append_to_list(3), append_to_list(4))
@@ -93,7 +97,7 @@ def test_subtransformation():
         lib.debug_symbols('source_id', 'result_id'),
         Rule(Not(If(Ref('source_id'), operator.eq, Ref('result_id'))),
              (lib.debug_message('NO!'), lib.debug_symbols('root'),
-                 lib.set_localname('neruda'), AbortRule))
+              lib.set_localname('neruda'), AbortRule))
     )
     doc = etree.fromstring('<augustus />')
     assert etree.QName(doc).text == 'augustus'

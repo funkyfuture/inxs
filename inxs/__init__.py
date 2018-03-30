@@ -3,23 +3,24 @@
 # TODO allow QName as condition
 # TODO delete unneeded symbols in setup functions' locals
 
+import logging
+import pkg_resources
 from collections import ChainMap
 from copy import deepcopy
-import cssselect
 from functools import lru_cache
-import logging
 from os import getenv
-import pkg_resources
 from types import SimpleNamespace
-from typing import (AnyStr, Callable, Dict, List, Mapping, Pattern,  # noqa: F401
-                    Sequence, Union)
+from typing import (
+    AnyStr, Callable, Dict, List, Mapping, Pattern,
+    Sequence, Union,
+)
 from typing import Any as AnyType
 
+import cssselect
 import dependency_injection
 from lxml import etree
 
 from inxs import lxml_utils
-
 
 # constants
 
@@ -40,7 +41,6 @@ TRAVERSE_TOP_TO_BOTTOM = True << 2
 TRAVERSE_BOTTOM_TO_TOP = False << 2
 TRAVERSE_ROOT_ONLY = True << 3
 
-
 # logging
 
 
@@ -55,21 +55,21 @@ nfo = logger.info
 
 class InxsException(Exception):
     """ Base class for inxs exceptions. """
-    pass
 
 
 class FlowControl(InxsException):
     """ Base class for exception that control the evaluation of handlers. """
+
     def __init__(self):
         super().__init__()
         dbg('{} is evoked.'.format(self.__class__.__name__))
 
 
 class AbortRule(FlowControl):
-    """ Can be raised to abort the evaluation of all the currently processed :class:`inxs.Rule` 's
-        remaining tests and handlers. No further elements will be considered for that rule. This is
-        similar to Python's builtin ``break`` in iterations.
-    """
+    """ Can be raised to abort the evaluation of all the currently processed
+        :class:`inxs.Rule` 's remaining tests and handlers. No further elements will
+        be considered for that rule. This is similar to Python's builtin ``break`` in
+        iterations. """
 
 
 class AbortTransformation(FlowControl):
@@ -77,14 +77,14 @@ class AbortTransformation(FlowControl):
 
 
 class SkipToNextElement(FlowControl):
-    """ Can be raised to abort handling of the current element. This is similar to Python's
-        builtin ``continue`` in iterations.
-    """
+    """ Can be raised to abort handling of the current element. This is similar to
+        Python's builtin ``continue`` in iterations. """
 
 
 # types
 
-AttributesConditionType = Union[Dict[Union[str, Pattern], Union[str, Pattern, None]], Callable]
+AttributesConditionType = Union[
+    Dict[Union[str, Pattern], Union[str, Pattern, None]], Callable]
 ConditionType = Union[Callable, AnyStr, AttributesConditionType]
 StepType = Union['Rule', Callable, Sequence['StepType']]
 
@@ -111,7 +111,10 @@ def _condition_factory(condition: ConditionType) -> Callable:
         except cssselect.SelectorError:
             pass
         else:
-            dbg(f'Translated css selector {condition}` to XPath expression {_condition}.')
+            dbg(
+                f'Translated css selector {condition}` to XPath expression '
+                f'{_condition}.'
+            )
             condition = _condition
         # assumes XPath
         dbg('Adding {} as XPath condition.'.format(condition))
@@ -137,8 +140,8 @@ _css_selector_translator = _CSSToXPathTranslator().css_to_xpath
 
 
 def dot_lookup(obj: AnyType, name: str):
-    """ Looks up the attribute ``name`` from ``obj`` considering nested attributes that are
-        separated by a ``.`` """
+    """ Looks up the attribute ``name`` from ``obj`` considering nested attributes
+        that are separated by a ``.`` """
     for _name in name.split('.'):
         obj = getattr(obj, _name)
     return obj
@@ -176,83 +179,92 @@ singleton_handler = lru_cache(HANDLER_CACHES_SIZE)
 
 
 def Any(*conditions: Sequence[ConditionType]) -> Callable:
-    """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
-        of them returned that.
+    """ Returns a callable that evaluates the provided test functions and returns
+        ``True`` if any of them returned that.
     """
     conditions = tuple(_condition_factory(x) for x in _flatten_sequence(conditions))
 
     def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return any(x(element, transformation) for x in conditions)
+
     return evaluator
 
 
 def OneOf(*conditions: Sequence[ConditionType]) -> Callable:
-    """ Returns a callable that evaluates the provided test functions and returns ``True`` if
-        exactly one of them returned that.
-    """
+    """ Returns a callable that evaluates the provided test functions and returns
+        ``True`` if exactly one of them returned that. """
     conditions = tuple(_condition_factory(x) for x in _flatten_sequence(conditions))
 
     def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return [x(element, transformation) for x in conditions].count(True) == 1
+
     return evaluator
 
 
 def Not(*conditions: Sequence[ConditionType]) -> Callable:
-    """ Returns a callable that evaluates the provided test functions and returns ``True`` if any
-        of them returned ``False``.
+    """ Returns a callable that evaluates the provided test functions and returns
+        ``True`` if any of them returned ``False``.
     """
     conditions = tuple(_condition_factory(x) for x in _flatten_sequence(conditions))
 
     def evaluator(element: etree._Element, transformation: Transformation) -> bool:
         return not any(x(element, transformation) for x in conditions)
+
     return evaluator
 
 
 @singleton_handler
 def HasNamespace(namespace: AnyStr) -> Callable:
     """ Returns a callable that tests an element for the given tag namespace. """
+
     def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).namespace == namespace
+
     return evaluator
 
 
 @singleton_handler
 def HasLocalname(tag: AnyStr) -> Callable:
     """ Returns a callable that tests an element for the given local tag name. """
+
     def evaluator(element: etree._Element, _) -> bool:
         return etree.QName(element).localname == tag
+
     return evaluator
 
 
 @singleton_handler
 def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
-    """ Returns a callable that tests an element for the given XPath expression (whether the
-        evaluation result on the :term:`transformation root` contains it) . If the ``xpath``
-        argument is a callable, it will be called with the current transformation as argument to
-        obtain the expression.
-    """
-    def callable_evaluator(element: etree._Element, transformation: Transformation) -> bool:
+    """ Returns a callable that tests an element for the given XPath expression (
+        whether the evaluation result on the :term:`transformation root` contains it).
+        If the ``xpath`` argument is a callable, it will be called with the current
+        transformation as argument to obtain the expression. """
+
+    def callable_evaluator(element: etree._Element,
+                           transformation: Transformation) -> bool:
         _xpath = xpath(transformation)
         dbg("Resolved XPath from callable: '{}'".format(_xpath))
         return element in transformation.xpath_evaluator(_xpath)
 
-    def string_evaluator(element: etree._Element, transformation: Transformation) -> bool:
+    def string_evaluator(element: etree._Element,
+                         transformation: Transformation) -> bool:
         return element in transformation.xpath_evaluator(xpath)
 
     return callable_evaluator if callable(xpath) else string_evaluator
 
 
 def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
-    """ Returns a callable that tests an element's attributes for constrains defined in a
-        :term:`mapping`.
-        All constraints must be matched to resolve as true. Expected keys and values can be
-        provided as string or compiled regular expression object from the :mod:`re` module.
-        A ``None`` as value constraint evaluates as true if the key is in the attributes regardless
-        its value. It also implies that at least one attribute must match the key's constraint if
-        this one is a regular expression object.
+    """ Returns a callable that tests an element's attributes for constrains defined
+        in a :term:`mapping`.
+        All constraints must be matched to resolve as true. Expected keys and values
+        can be provided as string or compiled regular expression object from the
+        :mod:`re` module.
+        A ``None`` as value constraint evaluates as true if the key is in the
+        attributes regardless its value. It also implies that at least one attribute
+        must match the key's constraint if this one is a regular expression object.
         Alternatively a callable can be passed that returns such mappings during the
-        transformation.
-    """
+        transformation. """
+
     def callable_evaluator(element: etree._Element, transformation: Transformation):
         _constraints = constraints(transformation)
         dbg("Resolved attributes' constraints from callable: '{}'".format(_constraints))
@@ -316,14 +328,16 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 @singleton_handler
 def Ref(name: str) -> Callable:
     """ Returns a callable that can be used for value resolution in a condition test or
-        :term:`handler function` that supports that. The value will be looked up during the
-        processing of a transformation in :attr:`Transformation._available_symbols` by the given
-        ``name``. This allows to reference dynamic values in :term:`transformation steps` and
-        :class:`Rule` s.
+        :term:`handler function` that supports that. The value will be looked up
+        during the processing of a transformation in
+        :attr:`Transformation._available_symbols` by the given ``name``. This allows
+        to reference dynamic values in :term:`transformation steps` and :class:`Rule` s.
     """
+
     def simple_resolver(transformation: Transformation) -> AnyType:
         dbg('Resolving {}.'.format(name))
         return transformation._available_symbols[name]
+
     setattr(simple_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
     def dot_resolver(transformation: Transformation) -> AnyType:
@@ -333,6 +347,7 @@ def Ref(name: str) -> Callable:
         for _name in token[1:]:
             obj = getattr(obj, _name)
         return obj
+
     setattr(dot_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
     return dot_resolver if '.' in name else simple_resolver
@@ -340,57 +355,61 @@ def Ref(name: str) -> Callable:
 
 def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
     """ Returns a callable that can be used as condition test in a :class:`Rule`.
-        The arguments ``x`` and ``y`` can be given as callables that will be used to get the
-        ``operator``'s input values during execution.
-        Before you implement your own operators, mind that there are a lot available within
-        Python's ``__builtins__`` and the standard library, in particular the :mod:`operator`
-        module.
+        The arguments ``x`` and ``y`` can be given as callables that will be used to
+        get the ``operator``'s input values during execution.
+        Before you implement your own operators, mind that there are a lot available
+        within Python's ``__builtins__`` and the standard library, in particular the
+        :mod:`operator` module.
 
         Examples:
 
         >>> If(Ref('previous_result'), operator.is_not, None)  # doctest: +SKIP
-
     """
+
     # TODO allow single arguments
     # TODO? allow primitive expressions for stdlib.operator's members
     def evaluator(_, transformation: Transformation) -> AnyType:
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
-                 x, transformation._available_symbols).as_kwargs)
+                x, transformation._available_symbols).as_kwargs)
             dbg("x resolved to '{}'".format(_x))
         else:
             _x = x
         if callable(y):
             _y = y(**dependency_injection.resolve_dependencies(
-                 y, transformation._available_symbols).as_kwargs)
+                y, transformation._available_symbols).as_kwargs)
             dbg("y resolved to '{}'".format(_y))
         else:
             _y = y
         return operator(_x, _y)
+
     return evaluator
 
 
 class Rule:
-    """ Instances of this class can be used as conditional :term:`transformation steps` that are
-        evaluated against all traversed elements.
+    """ Instances of this class can be used as conditional :term:`transformation
+        steps` that are evaluated against all traversed elements.
 
-        :param conditions: All given conditions must evaluate as ``True`` in order for this
-                           rule to apply.
+        :param conditions: All given conditions must evaluate as ``True`` in order
+                           for this rule to apply.
                            Strings and mappings can be provided as shortcuts, see
                            :ref:`rule_condition_shortcuts` for details.
                            The conditions are always called with the currently evaluated
-                           ``element`` and the :class:`Transformation` instance as arguments.
+                           ``element`` and the :class:`Transformation` instance as
+                           arguments.
                            There are helper functions for grouping conditions logically:
                            :func:`Any`, :func:`Not` and :func:`OneOf`.
-        :type conditions: A single callable, string or mapping, or a :term:`sequence` of such.
-        :param handlers: These handlers will be called if the conditions matched. They can take
-                         any argument whose name is available in
+        :type conditions: A single callable, string or mapping, or a :term:`sequence`
+                          of such.
+        :param handlers: These handlers will be called if the conditions matched.
+                         They can take any argument whose name is available in
                          :attr:`Transformation._available_symbols`.
         :type handlers: A single callable or a :term:`sequence` of such.
         :param name: The optional rule's name.
         :type name: String.
-        :param traversal_order: An optional traversal order that overrides the transformation's
-                                default :attr:`Transformation.config.traversal_order`, see
+        :param traversal_order: An optional traversal order that overrides the
+                                transformation's default
+                                :attr:`Transformation.config.traversal_order`, see
                                 :ref:`traversal_strategies` for details.
         :type traversal_order: Integer.
     """
@@ -409,7 +428,8 @@ class Rule:
         self.conditions = tuple(_condition_factory(x) for x in conditions)
         if _is_root_condition in self.conditions:
             traversal_order = TRAVERSE_ROOT_ONLY
-            self.conditions = tuple(x for x in self.conditions if x is not _is_root_condition)
+            self.conditions = tuple(
+                x for x in self.conditions if x is not _is_root_condition)
 
         if not isinstance(handlers, Sequence):
             handlers = (handlers,)
@@ -419,6 +439,7 @@ class Rule:
 
 class Once(Rule):
     """ This is a variant of :class:`Rule` that is only applied on the first match. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.handlers += (AbortRule,)
@@ -429,34 +450,39 @@ class Once(Rule):
 
 class Transformation:
     """ A transformation instance is defined by its :term:`transformation steps` and
-        :term:`configuration`. It is to be called with an ``lxml`` representation of an XML element
-        as :term:`transformation root`, only this element and its children will be considered
-        during traversal.
+        :term:`configuration`. It is to be called with an ``lxml`` representation of
+        an XML element as :term:`transformation root`, only this element and its
+        children will be considered during traversal.
 
-        :param steps: The designated transformation steps of the instance are given as a sequence
-                      of positional arguments.
-        :param config: The configuration values for the instance are passed as keyword arguments.
-                       Beside the following keywords, it can be populated with any key-value-pairs
-                       that will be available in :attr:`inxs.Transformation._available_symbols`
-                       during a transformation.
+        :param steps: The designated transformation steps of the instance are given
+                      as a sequence of positional arguments.
+        :param config: The configuration values for the instance are passed as keyword
+                       arguments.
+                       Beside the following keywords, it can be populated with any
+                       key-value-pairs that will be available in
+                       :attr:`inxs.Transformation._available_symbols` during a
+                       transformation.
                        The defaults are defined in :attr:`~inxs.config_defaults`.
 
-                       - ``context`` can be provided as mapping with items that are added to the
-                         :term:`context` before a (sub-)document is processed.
-                       - ``common_rule_conditions`` can be used to define one or more conditions
-                         that must match in all rule evaluations. E.g. a transformation could be
-                         restricted to elements with a certain namespace without redundantly
-                         defining that per rule. Can be given as a single object (e.g. a string) or
-                         as sequence.
-                       - ``copy`` is a boolean that defaults to ``True`` and indicates whether
-                         to process on a copy of the document's tree object.
+                       - ``context`` can be provided as mapping with items that are
+                         added to the :term:`context` before a (sub-)document is
+                         processed.
+                       - ``common_rule_conditions`` can be used to define one or more
+                         conditions that must match in all rule evaluations. E.g. a
+                         transformation could be restricted to elements with a
+                         certain namespace without redundantly defining that per rule.
+                         Can be given as a single object (e.g. a string) or as sequence.
+                       - ``copy`` is a boolean that defaults to ``True`` and indicates
+                         whether to process on a copy of the document's tree object.
                        - ``name`` can be used to identify a transformation.
-                       - ``result_object`` sets the transformation's attribute that is returned as
-                         result. Dot-notation lookup (e.g. ``context.target``) is implemented. Per
-                         default the :term:`transformation root` is returned.
-                       - ``traversal_order`` sets the default traversal order for rule evaluations
-                         and itself defaults to depth first, left to right, to to bottom. See
-                         :ref:`traversal_strategies` for possible values.
+                       - ``result_object`` sets the transformation's attribute that
+                         is returned as result. Dot-notation lookup (e.g.
+                         ``context.target``) is implemented. Per default the
+                         :term:`transformation root` is returned.
+                       - ``traversal_order`` sets the default traversal order for rule
+                         evaluations and itself defaults to depth first, left to right,
+                         to to bottom. See :ref:`traversal_strategies` for possible
+                         values.
     """
     __slots__ = ('config', 'steps', 'states')
 
@@ -466,10 +492,13 @@ class Transformation:
         'copy': True,
         'name': None,
         'result_object': 'root',
-        'traversal_order': TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
+        'traversal_order': (
+                TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
+        )
     }
-    """ The default :term:`configuration` values. Changing members on an instance actually affects
-        the class unless a copy of this mapping as copied and bound as instance attribute. """
+    """ The default :term:`configuration` values. Changing members on an instance
+        actually affects the class unless a copy of this mapping as copied and bound
+        as instance attribute. """
 
     traversers = {
         TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP:
@@ -481,7 +510,7 @@ class Transformation:
     }
 
     def __init__(self, *steps: StepType, **config: AnyType) -> None:
-        dbg("Initializing transformation instance named: '{}'.".format(config.get('name')))
+        dbg(f"Initializing transformation instance named: '{config.get('name')}'.")
         self.steps = _flatten_sequence(steps)
         self.config = SimpleNamespace(**config)
         self._set_config_defaults()
@@ -506,8 +535,9 @@ class Transformation:
         expanded_steps = []
         for step in self.steps:
             if isinstance(step, Rule):
-                expanded_steps.append(Rule(common_rule_conditions + step.conditions, step.handlers,
-                                           step.name, step.traversal_order))
+                expanded_steps.append(
+                    Rule(common_rule_conditions + step.conditions, step.handlers,
+                         step.name, step.traversal_order))
             else:
                 expanded_steps.append(step)
         self.steps = tuple(expanded_steps)
@@ -515,7 +545,7 @@ class Transformation:
     def _set_config_defaults(self) -> None:
         for key, value in self.config_defaults.items():
             if not hasattr(self.config, key):
-                dbg("Using default value '{}' for config key '{}'.".format(value, key))
+                dbg(f"Using default value '{value}' for config key '{key}'.")
                 setattr(self.config, key, value)
 
     def _validate_steps(self):
@@ -529,7 +559,7 @@ class Transformation:
 
         for step in self.steps:
             _step_name = step.name if hasattr(step, 'name') else step.__name__
-            dbg("Processing rule '{}'.".format(_step_name))
+            dbg(f"Processing rule '{_step_name}'.")
 
             self.states.current_step = step
             try:
@@ -577,7 +607,8 @@ class Transformation:
             self.states.tree = transformation_root.getroottree()
             self.states.root = transformation_root
 
-        self.states.xpath_evaluator = etree.XPathEvaluator(self.states.root, smart_prefix=True)
+        self.states.xpath_evaluator = etree.XPathEvaluator(self.states.root,
+                                                           smart_prefix=True)
 
         static_symbols = {
             'config': self.config,
@@ -624,7 +655,8 @@ class Transformation:
             raise NotImplementedError
         return traverser
 
-    def _test_conditions(self, element: etree._Element, conditions: Sequence[Callable]) -> bool:
+    def _test_conditions(self, element: etree._Element,
+                         conditions: Sequence[Callable]) -> bool:
         # there's no dependency injection here because its overhead
         # shall be avoided during testing conditions
         for condition in conditions:
@@ -643,7 +675,9 @@ class Transformation:
             kwargs = dependency_injection.resolve_dependencies(
                 handler, self._available_symbols).as_kwargs
             if isinstance(handler, Transformation):
-                kwargs['transformation_root'] = self.states.current_element or self.states.root
+                kwargs['transformation_root'] = (
+                        self.states.current_element or self.states.root
+                )
                 kwargs['copy'] = False
             dbg("Applying handler {}.".format(handler))
             self.states.previous_result = handler(**kwargs)
@@ -654,18 +688,19 @@ class Transformation:
 
     @property
     def _available_symbols(self) -> Mapping:
-        """ This mapping contains items that are used for the dependency injection of handler
-            functions. These names are included:
+        """ This mapping contains items that are used for the dependency injection of
+            handler functions. These names are included:
 
-            - All attributes of the transformation's :term:`configuration`, overridden by the
-              following.
-            - All attributes of the transformation's :term:`context`, overridden by the following.
+            - All attributes of the transformation's :term:`configuration`,
+              overridden by the following.
+            - All attributes of the transformation's :term:`context`, overridden by
+              the following.
             - ``config`` - The :term:`configuration` namespace object.
             - ``context`` - The :term:`context` namespace object.
-            - ``element`` - The element that matched a :class:`Rule`'s conditions or ``None`` in
-              case of simple :term:`transformation steps`.
-            - ``previous_result`` - The result that was returned by the previously evaluated
-              handler function.
+            - ``element`` - The element that matched a :class:`Rule`'s conditions or
+              ``None`` in case of simple :term:`transformation steps`.
+            - ``previous_result`` - The result that was returned by the previously
+              evaluated handler function.
             - ``root`` - The root element of the processed (sub-)document a.k.a
               :term:`transformation root`.
             - ``transformation`` - The calling :class:`Transformation` instance.
@@ -684,29 +719,27 @@ class Transformation:
 
     @property
     def context(self):
-        """ This property can be used to access the :term:`context` while the transformation is
-            processing.
-        """
+        """ This property can be used to access the :term:`context` while the
+            transformation is processing. """
         return self.states.context
 
     @property
     def root(self):
-        """ This property can be used to access the root element of the currently processed
-            (sub-)document.
-        """
+        """ This property can be used to access the root element of the currently
+            processed (sub-)document. """
         return self.states.root
 
     @property
     def tree(self):
-        """ This property can be used to access the tree object of the currently processed
-            document.
-        """
+        """ This property can be used to access the tree object of the currently
+            processed document. """
         return self.states.tree
 
     @property
     def xpath_evaluator(self):
-        """ During a transformation an :class:`lxml.etree.XPathEvaluator` using the processed
-            (sub-)document's root element as such is bound to this property. """
+        """ During a transformation an :class:`lxml.etree.XPathEvaluator` using the
+            processed (sub-)document's root element as such is bound to this
+            property. """
         return self.states.xpath_evaluator
 
 

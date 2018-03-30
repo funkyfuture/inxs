@@ -4,7 +4,6 @@ from inxs import lib, AbortRule, If, Once, Ref, Rule, Transformation
 from inxs.lxml_utils import find
 from lxml import builder, etree  # noqa
 
-
 METS_NAMESPACE = 'http://www.loc.gov/METS/'
 MODS_NAMESPACE = 'http://www.loc.gov/mods/v3'
 TEI_NAMESPACE = 'http://www.tei-c.org/ns/1.0'
@@ -14,7 +13,6 @@ NAMESPACE_MAP = {
     'mods': MODS_NAMESPACE,
     'tei': TEI_NAMESPACE
 }
-
 
 as_result = lib.put_variable('result')
 f = lib.f
@@ -83,12 +81,12 @@ mods_name = Transformation(
 
     Once(If(Ref('role'), op.eq, 'author'),
          (lib.append('outer_context.titleStmt', Ref('result'), copy_element=True),
-          lib.append('outer_context.biblFull_titleStmt', Ref('result'), copy_element=True))),
+          lib.append('outer_context.biblFull_titleStmt', Ref('result'),
+                     copy_element=True))),
 
     common_rule_conditions=MODS_NAMESPACE,
     copy=False, result_object=None
 )
-
 
 mods_location = Transformation(
     f(etree.Element, 'msIdentifier', nsmap={None: TEI_NAMESPACE}),
@@ -105,7 +103,6 @@ mods_location = Transformation(
     copy=False, result_object='context.result'
 )
 
-
 from_mods = Transformation(
     generate_skeleton,
 
@@ -119,7 +116,6 @@ from_mods = Transformation(
     common_rule_conditions=MODS_NAMESPACE,
     result_object='context.result'
 )
-
 
 main = Transformation(
     Rule((MODS_NAMESPACE, 'mods'),
