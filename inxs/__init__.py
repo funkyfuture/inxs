@@ -62,7 +62,7 @@ class FlowControl(InxsException):
 
     def __init__(self):
         super().__init__()
-        dbg('{} is evoked.'.format(self.__class__.__name__))
+        dbg(f'{self.__class__.__name__} is evoked.')
 
 
 class AbortRule(FlowControl):
@@ -100,11 +100,11 @@ def _condition_factory(condition: ConditionType) -> Callable:
             return _is_any_element_condition
         elif ':' in condition and '::' not in condition:
             # assumes URI
-            dbg('Adding {} as namespace condition.'.format(condition))
+            dbg(f'Adding {condition} as namespace condition.')
             return HasNamespace(condition)
         elif condition.isalpha():
             # assumes tag
-            dbg("Adding {} as tag's local name condition.".format(condition))
+            dbg(f"Adding {condition} as tag's local name condition.")
             return HasLocalname(condition)
         try:  # it may be a css selctor
             _condition = _css_selector_translator(condition)
@@ -117,10 +117,10 @@ def _condition_factory(condition: ConditionType) -> Callable:
             )
             condition = _condition
         # assumes XPath
-        dbg('Adding {} as XPath condition.'.format(condition))
+        dbg(f'Adding {condition} as XPath condition.')
         return MatchesXPath(condition)
     elif isinstance(condition, Mapping):
-        dbg('Adding {} as attribute condition.'.format(condition))
+        dbg(f'Adding {condition} as attribute condition.')
         return MatchesAttributes(condition)
     else:
         return condition
@@ -243,7 +243,7 @@ def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
     def callable_evaluator(element: etree._Element,
                            transformation: Transformation) -> bool:
         _xpath = xpath(transformation)
-        dbg("Resolved XPath from callable: '{}'".format(_xpath))
+        dbg(f"Resolved XPath from callable: '{_xpath}'")
         return element in transformation.xpath_evaluator(_xpath)
 
     def string_evaluator(element: etree._Element,
@@ -267,7 +267,9 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 
     def callable_evaluator(element: etree._Element, transformation: Transformation):
         _constraints = constraints(transformation)
-        dbg("Resolved attributes' constraints from callable: '{}'".format(_constraints))
+        dbg(
+            f"Resolved attributes' constraints from callable: '{_constraints}'"
+        )
         return MatchesAttributes(_constraints)(element, transformation)
 
     if callable(constraints):
@@ -335,13 +337,13 @@ def Ref(name: str) -> Callable:
     """
 
     def simple_resolver(transformation: Transformation) -> AnyType:
-        dbg('Resolving {}.'.format(name))
+        dbg('Resolving {name}.')
         return transformation._available_symbols[name]
 
     setattr(simple_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
     def dot_resolver(transformation: Transformation) -> AnyType:
-        dbg('Resolving {}.'.format(name))
+        dbg(f'Resolving {name}.')
         token = name.split('.')
         obj = transformation._available_symbols[token[0]]
         for _name in token[1:]:
@@ -372,13 +374,13 @@ def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
         if callable(x):
             _x = x(**dependency_injection.resolve_dependencies(
                 x, transformation._available_symbols).as_kwargs)
-            dbg("x resolved to '{}'".format(_x))
+            dbg(f"x resolved to '{_x}'")
         else:
             _x = x
         if callable(y):
             _y = y(**dependency_injection.resolve_dependencies(
                 y, transformation._available_symbols).as_kwargs)
-            dbg("y resolved to '{}'".format(_y))
+            dbg(f"y resolved to '{_y}'")
         else:
             _y = y
         return operator(_x, _y)
@@ -420,7 +422,7 @@ class Rule:
                  name: str = None, traversal_order: int = None) -> None:
 
         self.name: str = name
-        dbg("Initializing rule '{}'.".format(name))
+        dbg(f"Initializing rule '{name}'.")
 
         if not isinstance(conditions, Sequence) or isinstance(conditions, str):
             conditions = (conditions,)
@@ -593,7 +595,7 @@ class Transformation:
 
         resolved_context = deepcopy(self.config.context)
         resolved_context.update(context)
-        dbg('Initial context:\n{}'.format(resolved_context))
+        dbg(f'Initial context:\n{resolved_context}')
         self.states.context = SimpleNamespace(**resolved_context)
 
         if copy:
@@ -627,12 +629,12 @@ class Transformation:
 
     def _apply_rule(self, rule: Rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
-        dbg('Using traverser: {}'.format(traverser))
+        dbg(f'Using traverser: {traverser}')
 
         for element in traverser(self.states.root):
-            if element.tag is etree.Comment or element.tag is etree.Entity:
+            if element.tag in (etree.Comment, etree.Entity):
                 continue
-            dbg('Evaluating {}.'.format(element))
+            dbg(f'Evaluating {element}.')
             self.states.current_element = element
             try:
                 if self._test_conditions(element, rule.conditions):
@@ -660,7 +662,7 @@ class Transformation:
         # there's no dependency injection here because its overhead
         # shall be avoided during testing conditions
         for condition in conditions:
-            dbg("Testing condition '{}'.".format(condition))
+            dbg(f"Testing condition '{condition}'.")
             if not condition(element, self):
                 dbg('The condition did not apply.')
                 return False
@@ -679,7 +681,7 @@ class Transformation:
                         self.states.current_element or self.states.root
                 )
                 kwargs['copy'] = False
-            dbg("Applying handler {}.".format(handler))
+            dbg(f"Applying handler {handler}.")
             self.states.previous_result = handler(**kwargs)
 
     def _finalize_transformation(self) -> None:

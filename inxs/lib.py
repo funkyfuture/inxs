@@ -92,7 +92,7 @@ def concatenate(*parts):
             elif isinstance(part, (str, List)):
                 _part = part
             else:
-                raise RuntimeError('Unhandled type: {}'.format(type(part)))
+                raise RuntimeError(f'Unhandled type: {type(part)}')
             result += _part
         return result
 
@@ -510,7 +510,7 @@ def resolve_xpath_to_element(*names):
             elif len(resolved_elements) == 1:
                 setattr(context, name, resolved_elements[0])
             else:
-                raise RuntimeError('More than one element matched {}'.format(xpath))
+                raise RuntimeError(f'More than one element matched {xpath}')
         return transformation.states.previous_result
 
     return resolver
