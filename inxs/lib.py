@@ -42,15 +42,24 @@ def export(func):
 @singleton_handler
 def append(name, symbol=Ref('previous_result'), copy_element=False):
     """ Appends the object referenced by ``symbol`` (default: the result of the previous
-        :term:`handler function`) to the object referenced by ``name`` in the
-        :term:`context` namespace. If the object is an element and ``copy_element`` is
-        ``True``, a copy is appended to the target. """
+        :term:`handler function`) to the that is object available as ``name`` in the
+        :attr:`Transformation._available_symbols`. If the object is an element and
+        ``copy_element`` is ``True``, a copy is appended to the target. """
 
-    def handler(context, previous_result, transformation):
+    def handler(previous_result, transformation):
         obj = symbol(transformation)
         if copy_element and isinstance(obj, etree._Element):
             obj = deepcopy(obj)
-        dot_lookup(context, name).append(obj)
+
+        if '.' in name:
+            namespace, path = name.split('.', 1)
+            target = transformation._available_symbols[namespace]
+            target = dot_lookup(target, path)
+        else:
+            target = transformation._available_symbols[name]
+
+        target.append(obj)
+
         return previous_result
 
     return handler
