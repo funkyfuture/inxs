@@ -532,15 +532,21 @@ def resolve_xpath_to_element(*names):
 
 @export
 @singleton_handler
-def set_attribute(name, value):
+def set_attribute(name, value=Ref('previous_result')):
     """ Sets an attribute ``name`` with ``value``. """
 
-    # TODO Ref resolving
-    def handler(element, previous_result):
+    def simple_handler(element, previous_result):
         element.attrib[name] = value
         return previous_result
 
-    return handler
+    def resolving_handler(element, previous_result, transformation):
+        element.attrib[name] = value(transformation)
+        return previous_result
+
+    if isinstance(value, str):
+        return simple_handler
+    elif is_Ref(value):
+        return resolving_handler
 
 
 @export
