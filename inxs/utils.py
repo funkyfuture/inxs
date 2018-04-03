@@ -57,3 +57,14 @@ def reduce_whitespaces(text: str, translate_to_space: str = WHITESPACES_WO_SPACE
     while '  ' in result:
         result = result.replace('  ', ' ')
     return result
+
+
+@export
+def resolve_Ref_values_in_mapping(mapping, transformation):
+    result = mapping.__class__()
+    for key, value in mapping.items():
+        if is_Ref(value):
+            result[key] = value(transformation)
+        else:
+            result[key] = value
+    return result

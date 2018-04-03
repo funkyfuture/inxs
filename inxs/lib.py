@@ -189,12 +189,9 @@ def f(func, *args, **kwargs):
                 _args += (arg(transformation),)
             else:
                 _args += (arg,)
-        _kwargs = {}
-        for key, value in kwargs.items():
-            if is_Ref(value):
-                _kwargs[key] = value(transformation)
-            else:
-                _kwargs[key] = value
+
+        _kwargs = resolve_Ref_values_in_mapping(kwargs, transformation)
+
         return _func(*_args, **_kwargs)
 
     return wrapper
