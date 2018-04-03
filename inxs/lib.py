@@ -17,10 +17,8 @@ from typing import Callable, Dict, List, Mapping, Tuple, Union
 
 from lxml import builder, etree
 
-from inxs import (
-    dot_lookup, lxml_utils, Ref, REF_IDENTIFYING_ATTRIBUTE,
-    singleton_handler,
-)
+from inxs import dot_lookup, lxml_utils, Ref, singleton_handler
+from inxs.utils import is_Ref, resolve_Ref_values_in_mapping
 
 # helpers
 
@@ -35,11 +33,6 @@ __all__ = []
 def export(func):
     __all__.append(func.__name__)
     return func
-
-
-@export
-def is_Ref(obj):
-    return hasattr(obj, REF_IDENTIFYING_ATTRIBUTE)
 
 
 # the actual lib

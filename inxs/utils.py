@@ -2,8 +2,29 @@ import string
 from functools import lru_cache
 from typing import Dict
 
+from inxs.constants import REF_IDENTIFYING_ATTRIBUTE
+
+
 # TODO add unicode whitespaces
 WHITESPACES_WO_SPACE = string.whitespace.replace(' ', '')
+
+# helpers
+
+
+__all__ = []
+
+
+def export(func):
+    __all__.append(func.__name__)
+    return func
+
+
+# utils
+
+
+@export
+def is_Ref(obj):
+    return hasattr(obj, REF_IDENTIFYING_ATTRIBUTE)
 
 
 @lru_cache(8)
@@ -11,6 +32,7 @@ def _make_whitespace_translation_table(chars: str) -> Dict[int, str]:
     return str.maketrans(chars, ' ' * len(chars))
 
 
+@export
 def reduce_whitespaces(text: str, translate_to_space: str = WHITESPACES_WO_SPACE,
                        strip: str = 'lr') -> str:
     """ Reduces the whitespaces of the provided string by replacing any of the

@@ -11,8 +11,7 @@ from functools import lru_cache
 from os import getenv
 from types import SimpleNamespace
 from typing import (
-    AnyStr, Callable, Dict, List, Mapping, Pattern,
-    Sequence, Union,
+    AnyStr, Callable, Dict, List, Mapping, Pattern, Sequence, Union,
 )
 from typing import Any as AnyType
 
@@ -21,8 +20,19 @@ import dependency_injection
 from lxml import etree
 
 from inxs import lxml_utils
+from inxs.constants import (
+    REF_IDENTIFYING_ATTRIBUTE,
+    TRAVERSE_BOTTOM_TO_TOP,
+    TRAVERSE_DEPTH_FIRST,
+    TRAVERSE_LEFT_TO_RIGHT,
+    TRAVERSE_RIGHT_TO_LEFT,
+    TRAVERSE_ROOT_ONLY,
+    TRAVERSE_TOP_TO_BOTTOM,
+    TRAVERSE_WIDTH_FIRST,
+)
 
-# constants
+
+# config
 
 
 __version__ = pkg_resources.get_distribution('inxs').version
@@ -31,15 +41,6 @@ HANDLER_CACHES_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
 if HANDLER_CACHES_SIZE is not None:
     HANDLER_CACHES_SIZE = int(HANDLER_CACHES_SIZE)
 
-REF_IDENTIFYING_ATTRIBUTE = '_this_is_a_Ref_resolver_'
-
-TRAVERSE_DEPTH_FIRST = True << 0
-TRAVERSE_WIDTH_FIRST = False << 0
-TRAVERSE_LEFT_TO_RIGHT = True << 1
-TRAVERSE_RIGHT_TO_LEFT = False << 1
-TRAVERSE_TOP_TO_BOTTOM = True << 2
-TRAVERSE_BOTTOM_TO_TOP = False << 2
-TRAVERSE_ROOT_ONLY = True << 3
 
 # logging
 
