@@ -12,10 +12,13 @@ as far as it proved functional to you, it doesn't need to be polished at that po
 
 
 import logging
+import re
 from copy import deepcopy
 from typing import Callable, Dict, List, Mapping, Tuple, Union
 
 from lxml import builder, etree
+from lxml.html import builder as html_builder
+
 
 from inxs import dot_lookup, lxml_utils, Ref, singleton_handler
 from inxs.utils import is_Ref, resolve_Ref_values_in_mapping
@@ -260,6 +263,19 @@ def has_children(element, _):
 
 
 @export
+@singleton_handler
+def has_matching_text(pattern):
+    """ Returns ``True`` if the element has a text that matches the provided
+        ``pattern``. """
+    pattern = re.compile(pattern)
+
+    def evaluator(element, _):
+        return element.text is not None and pattern.match(element.text)
+
+    return evaluator
+
+
+@export
 def has_tail(element, _):
     """ Returns ``True`` if the element has a tail. """
     return bool(element.tail)
@@ -283,6 +299,19 @@ def init_elementmaker(name: str = 'e', **kwargs):
         return previous_result
 
     return wrapped
+
+
+@export
+@singleton_handler
+def insert_fontawesome_icon(name: str, position: str):
+    """ Inserts the html markup for an icon from the fontawesome set with the given
+        ``name`` at ``position`` of which only ``after`` is implemented atm. """
+    def after_handler(element):
+        element.append(html_builder.I(html_builder.CLASS(f'fa fa-{name}')))
+
+    return {
+        'after': after_handler,
+    }[position]
 
 
 @export
