@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pip import main as pip
 from setuptools import setup
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 from sys import version_info
+
+try:
+    # pip < 10
+    from pip import main as pip
+except ImportError:
+    # pip 10
+    from pip._internal import main as pip
+
 
 if version_info < (3, 6):
     raise RuntimeError("Requires Python 3.6 or later.")
