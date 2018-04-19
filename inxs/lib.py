@@ -303,11 +303,16 @@ def init_elementmaker(name: str = 'e', **kwargs):
 
 @export
 @singleton_handler
-def insert_fontawesome_icon(name: str, position: str):
+def insert_fontawesome_icon(name: str, position: str, spin: bool = False):
     """ Inserts the html markup for an icon from the fontawesome set with the given
-        ``name`` at ``position`` of which only ``after`` is implemented atm. """
+        ``name`` at ``position`` of which only ``after`` is implemented atm.
+
+        It employs semantics for Font Awesome 5. """
     def after_handler(element):
-        element.append(html_builder.I(html_builder.CLASS(f'fa fa-{name}')))
+        classes = f'fas fa-{name}'
+        if spin:
+            classes += ' fa-spin'
+        element.append(html_builder.I(html_builder.CLASS(classes)))
 
     return {
         'after': after_handler,
