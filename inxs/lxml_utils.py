@@ -30,6 +30,13 @@ def find(element, path):
     return element.find(path, namespaces=element.nsmap)
 
 
+def findall(element, path):
+    """ A helper function around a :attr:`lxml.etree._Element.findall` that passes the
+        element's namespace mapping.
+    """
+    return element.findall(path, namespaces=element.nsmap)
+
+
 def is_root_element(element: etree._Element) -> bool:
     """ Tests whether the given element is the root of the tree object.
         Not to be mixed up with the :term:`transformation root`.
