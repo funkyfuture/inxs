@@ -14,7 +14,7 @@ as far as it proved functional to you, it doesn't need to be polished at that po
 import logging
 import re
 from copy import deepcopy
-from typing import Callable, Dict, List, Mapping, Tuple, Union
+from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union
 
 from lxml import builder, etree
 from lxml.html import builder as html_builder
