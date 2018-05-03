@@ -17,7 +17,7 @@ except ImportError:
 if version_info < (3, 6):
     raise RuntimeError("Requires Python 3.6 or later.")
 
-VERSION = '0.1b2.dev15'
+VERSION = '0.1b2.dev16'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
