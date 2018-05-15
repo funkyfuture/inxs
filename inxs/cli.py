@@ -20,19 +20,33 @@ from inxs.lib import dbg, logger, nfo
 def parse_args(args: Sequence[str]) -> Namespace:
     parser = ArgumentParser()
 
+    parser.add_argument(
+        '--inplace', '-i', action='store_true', default=False,
+        help='Write the result back to the input file.'
+    )
+    parser.add_argument(
+        '--pretty', '-p', action='store_true', default=False,
+        help='Prettifies the resulting document with indentations to be "human '
+             'readable."'
+    )
+    parser.add_argument(
+        '--recover', action='store_true', default=False,
+        help='Let the parser try to process broken XML.'
+    )
+    parser.add_argument(
+        '--verbose', '-v', action='count', default=0,
+        help='Increases the logging level; twice for debug.'
+    )
     # TODO help texts
-    parser.add_argument('--pretty', action='store_true', default=False)
-    parser.add_argument('--recover', action='store_true', default=False)
-    parser.add_argument('-v', '--verbose', action='count', default=0)
-    parser.add_argument('transformation')
-    parser.add_argument('target')
+    parser.add_argument('transformation', metavar='TRANSFORMATION')
+    parser.add_argument('input', metavar='INPUT')
 
     return parser.parse_args(args)
 
 
 def setup_logging(verbosity: int) -> None:
     level = ('WARNING', 'INFO', 'DEBUG')[verbosity]
-    console_log_handler = logging.StreamHandler(sys.stdout)
+    console_log_handler = logging.StreamHandler(sys.stderr)
     console_log_handler.setLevel(level)
     logger.addHandler(console_log_handler)
     logger.setLevel(level)
@@ -80,17 +94,20 @@ def get_transformation(location: str) -> Transformation:
 
 
 def parse_file(args: Namespace) -> etree._ElementTree:
+    dbg('Parsing file.')
     parser = etree.XMLParser(recover=args.recover)
-    return etree.parse(args.target, parser=parser)
+    return etree.parse(args.input, parser=parser)
 
 
-def write_file(document: etree._ElementTree, args: Namespace) -> None:
-    document.write(args.target,
+def write_result(document: etree._ElementTree, args: Namespace) -> None:
+    target = args.input if args.inplace else sys.stdout.buffer
+    document.write(target,
                    pretty_print=args.pretty,
                    # TODO obtain options from source:
                    encoding='utf-8',
                    xml_declaration=True)
-    dbg('Wrote result back to file.')
+    if args.input:
+        dbg('Wrote result back to file.')
 
 
 def main(args: Sequence[str] = None) -> None:
@@ -103,11 +120,12 @@ def main(args: Sequence[str] = None) -> None:
         dbg(f'Invoked with args: {args}')
         transformation = get_transformation(args.transformation)
         document = parse_file(args)
-        copy_file(args.target, args.target + '.orig')
-        dbg("Saved document backup with suffix '.orig'")
+        if args.inplace:
+            copy_file(args.input, args.input + '.orig')
+            dbg("Saved document backup with suffix '.orig'")
         dbg('Applying transformation.')
         document._setroot(transformation(document.getroot()))
-        write_file(document, args)
+        write_result(document, args)
     except Exception:
         print_exc()
         raise SystemExit(2)
