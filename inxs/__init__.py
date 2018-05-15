@@ -99,7 +99,7 @@ def _condition_factory(condition: ConditionType) -> Callable:
             return _is_root_condition
         elif condition == '*':
             return _is_any_element_condition
-        elif ':' in condition and '::' not in condition:
+        elif '://' in condition:
             # assumes URI
             dbg(f'Adding {condition} as namespace condition.')
             return HasNamespace(condition)
