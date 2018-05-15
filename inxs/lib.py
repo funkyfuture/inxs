@@ -40,6 +40,42 @@ def export(func):
 
 # the actual lib
 
+@export
+@singleton_handler
+def add_html_classes(*classes, target=Ref('element')):
+    """ Adds the string tokens passed as positional arguments to the
+        ``classes`` attribute of an element specified by ``target``.
+        Per default that is a :func:`~inxs.Ref` to the matching element of a
+        rule. """
+
+    def add_items(_set, value):
+        if isinstance(value, str):
+            _set.add(value)
+        elif isinstance(value, Sequence):
+            _set.update(value)
+        else:
+            raise RuntimeError
+
+    def processor(transformation):
+        if not classes:
+            return
+
+        # TODO input type specialized handlers
+        _classes = set()
+        for cls in classes:
+            if not cls:
+                continue
+            if is_Ref(cls):
+                add_items(_classes, cls(transformation))
+            else:
+                add_items(_classes, cls)
+
+        element = target(transformation)
+        value = element.attrib.get('class', '').strip()
+        _classes.update(x.strip() for x in value.split() if x)
+        element.attrib['class'] = ' '.join(sorted(_classes))
+    return processor
+
 
 @export
 @singleton_handler
