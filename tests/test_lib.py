@@ -53,6 +53,22 @@ def test_drop_siblings(side, expected):
     assert equal_subtree(result, etree.fromstring(expected))
 
 
+def test_extract_text():
+    element = etree.fromstring('<tune>Desmond Dekker  -  Shanty Town</tune>')
+    assert lib.extract_text()(element) == 'Desmond Dekker - Shanty Town'
+
+
+def test_get_variable():
+    assert lib.get_variable('foo')(SimpleNamespace(foo='bar')) == 'bar'
+
+
+def test_has_matching_text():
+    element = etree.fromstring('<song>Desmond Dekker  -  Shanty Town</song>')
+
+    assert lib.has_matching_text('.*  -  .*')(element, None)
+    assert not lib.has_matching_text('.*007.*')(element, None)
+
+
 def test_has_tail():
     element = etree.Element('foo', )
     assert not lib.has_tail(element, None)
@@ -60,10 +76,6 @@ def test_has_tail():
     assert not lib.has_tail(element, None)
     element.tail = 'tail'
     assert lib.has_tail(element, None)
-
-
-def test_get_variable():
-    assert lib.get_variable('foo')(SimpleNamespace(foo='bar')) == 'bar'
 
 
 @mark.parametrize('tag,namespace_s,nsmap',

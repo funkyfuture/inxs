@@ -201,6 +201,7 @@ def drop_siblings(left_or_right):
 
 
 @export
+@singleton_handler
 def extract_text(include_tail: bool = False, reduce_whitespace: bool = True):
     """ Returns the extracted text by :func:`~inxs.lxml_utils.extract_text`. See its
         docs regarding possible keyword arguments. """
@@ -348,6 +349,7 @@ def insert_fontawesome_icon(name: str, position: str, spin: bool = False):
 
 
 @export
+@singleton_handler
 def join_to_string(separator: str = ' ', symbol='previous_result'):
     """ Joins the object referenced by ``symbol`` around the given
         ``separator`` and returns it. """
