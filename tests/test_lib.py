@@ -8,6 +8,28 @@ from inxs import lib, Ref, Rule, Transformation
 from tests import equal_subtree
 
 
+def test_add_html_classes():
+    doc = etree.fromstring('<html><body/></html>')
+
+    transformation = Transformation(
+        Rule('body', lib.add_html_classes('transformed')),
+    )
+    result = transformation(doc)
+    assert result.find('body').attrib['class'] == 'transformed'
+
+    doc = etree.fromstring('<html><body class="loaded" /></html>')
+    result = transformation(doc)
+    assert all(x in result.find('body').attrib['class'] for x in
+               ('transformed', 'loaded'))
+
+    transformation = Transformation(
+        Rule('body', lib.add_html_classes('transformed', 'and_something_else')),
+    )
+    result = transformation(doc)
+    assert all(x in result.find('body').attrib['class'] for x in
+               ('and_something_else', 'loaded', 'transformed'))
+
+
 def test_clear_attributes():
     element = etree.Element('root', {'foo': 'bar'})
     lib.clear_attributes(element, None)

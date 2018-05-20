@@ -48,14 +48,6 @@ def add_html_classes(*classes, target=Ref('element')):
         Per default that is a :func:`~inxs.Ref` to the matching element of a
         rule. """
 
-    def add_items(_set, value):
-        if isinstance(value, str):
-            _set.add(value)
-        elif isinstance(value, Sequence):
-            _set.update(value)
-        else:
-            raise RuntimeError
-
     def processor(transformation):
         if not classes:
             return
@@ -66,9 +58,9 @@ def add_html_classes(*classes, target=Ref('element')):
             if not cls:
                 continue
             if is_Ref(cls):
-                add_items(_classes, cls(transformation))
+                _classes.add(cls(transformation))
             else:
-                add_items(_classes, cls)
+                _classes.add(cls)
 
         element = target(transformation)
         value = element.attrib.get('class', '').strip()
