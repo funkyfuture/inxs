@@ -78,6 +78,13 @@ def test_has_tail():
     assert lib.has_tail(element, None)
 
 
+def test_join_to_string():
+    transformation = SimpleNamespace(
+        _available_symbols={'previous_result': ['la', 'la', 'la']}
+    )
+    assert lib.join_to_string(' ')(transformation) == 'la la la'
+
+
 @mark.parametrize('tag,namespace_s,nsmap',
                   (('foo', 'http://bar.org', {}),
                    ('bar:foo', {'bar': 'http://bar.org'}, {}),
