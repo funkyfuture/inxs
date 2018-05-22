@@ -29,6 +29,14 @@ def test_add_html_classes():
     assert all(x in result.find('body').attrib['class'] for x in
                ('and_something_else', 'loaded', 'transformed'))
 
+    transformation = Transformation(
+        Rule('body', lib.add_html_classes(Ref('html_classes'))),
+        context={'html_classes': ['transformed', 'and_something_else']}
+    )
+    result = transformation(doc)
+    assert all(x in result.find('body').attrib['class'] for x in
+               ('and_something_else', 'loaded', 'transformed'))
+
 
 def test_clear_attributes():
     element = etree.Element('root', {'foo': 'bar'})

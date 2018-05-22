@@ -14,7 +14,7 @@ as far as it proved functional to you, it doesn't need to be polished at that po
 import logging
 import re
 from copy import deepcopy
-from typing import Callable, Dict, List, Mapping, Tuple, Union
+from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union
 
 from lxml import builder, etree
 from lxml.html import builder as html_builder
@@ -45,8 +45,18 @@ def export(func):
 def add_html_classes(*classes, target=Ref('element')):
     """ Adds the string tokens passed as positional arguments to the
         ``classes`` attribute of an element specified by ``target``.
+        An argument can also be a sequence of strings or a :func:`~inxs.Ref` that
+        yields on of the two.
         Per default that is a :func:`~inxs.Ref` to the matching element of a
         rule. """
+
+    def add_items(_set, value):
+        if isinstance(value, str):
+            _set.add(value)
+        elif isinstance(value, Sequence):
+            _set.update(value)
+        else:
+            raise RuntimeError
 
     def processor(transformation):
         if not classes:
@@ -58,9 +68,9 @@ def add_html_classes(*classes, target=Ref('element')):
             if not cls:
                 continue
             if is_Ref(cls):
-                _classes.add(cls(transformation))
+                add_items(_classes, cls(transformation))
             else:
-                _classes.add(cls)
+                add_items(_classes, cls)
 
         element = target(transformation)
         value = element.attrib.get('class', '').strip()
