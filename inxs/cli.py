@@ -11,6 +11,7 @@ from shutil import copy2 as copy_file
 from traceback import print_exc
 from typing import Sequence
 
+from delb import Document
 from lxml import etree
 
 from inxs import Transformation
@@ -39,7 +40,7 @@ def parse_args(args: Sequence[str]) -> Namespace:
     )
     # TODO help texts
     parser.add_argument('transformation', metavar='TRANSFORMATION')
-    parser.add_argument('input', metavar='INPUT')
+    parser.add_argument('input', metavar='INPUT', type=Path)
 
     return parser.parse_args(args)
 
@@ -93,21 +94,18 @@ def get_transformation(location: str) -> Transformation:
     return transformation_objects[transformation_name]
 
 
-def parse_file(args: Namespace) -> etree._ElementTree:
+def parse_file(args: Namespace) -> Document:
     dbg('Parsing file.')
     parser = etree.XMLParser(recover=args.recover)
-    return etree.parse(args.input, parser=parser)
+    return Document(args.input, parser=parser)
 
 
-def write_result(document: etree._ElementTree, args: Namespace) -> None:
-    target = args.input if args.inplace else sys.stdout.buffer
-    document.write(target,
-                   pretty_print=args.pretty,
-                   # TODO obtain options from source:
-                   encoding='utf-8',
-                   xml_declaration=True)
-    if args.input:
+def write_result(document: Document, args: Namespace) -> None:
+    if args.inplace:
         dbg('Wrote result back to file.')
+        document.save(args.input, pretty=args.pretty)
+    else:
+        document.write(sys.stdout.buffer, pretty=args.pretty)
 
 
 def main(args: Sequence[str] = None) -> None:
@@ -121,10 +119,10 @@ def main(args: Sequence[str] = None) -> None:
         transformation = get_transformation(args.transformation)
         document = parse_file(args)
         if args.inplace:
-            copy_file(args.input, args.input + '.orig')
+            copy_file(args.input, args.input.with_suffix('.orig'))
             dbg("Saved document backup with suffix '.orig'")
         dbg('Applying transformation.')
-        document._setroot(transformation(document.getroot()))
+        document.root = transformation(document.root)
         write_result(document, args)
     except Exception:
         print_exc()

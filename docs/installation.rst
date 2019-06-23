@@ -8,22 +8,10 @@ Installation
 Prerequisites
 -------------
 
-At least Python 3.6 and ``pip`` must be installed. As ``inxs`` is depending on a
-`proposed feature`_ for ``lxml``, its binary wheels can't be used for installation and a patched version
-will be built locally which requires some C header files::
-
-    # On Debian and derived systems like Ubuntu:
-    $ sudo apt-get install build-essential libxml2-dev libxslt-dev zlib1g-dev
-    # On Alpine Linux:
-    $ apk add build-base libxml2-dev libxslt-dev zlib-dev
+At least Python 3.6 is required, delb_ is installed as dependency.
 
 
-*Windows* users should download and extract the sources_ and follow these `build instructions`_.
-
-
-.. _build instructions: http://lxml.de/build.html#static-linking-on-windows
-.. _proposed feature: https://github.com/lxml/lxml/pull/236
-.. _sources: https://codeload.github.com/funkyfuture/lxml/zip/smart_xpath
+.. _delb: https://pypi.org/project/delb/
 
 
 From the cheeseshop
@@ -39,7 +27,7 @@ If you don't have pip_ installed, this `Python installation guide`_ can guide
 you through the process.
 
 .. _pip: https://pip.pypa.io/en/stable/
-.. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+.. _Python installation guide: https://docs.python-guide.org/starting/installation/
 
 
 From the sources

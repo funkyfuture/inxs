@@ -13,14 +13,14 @@ as far as it proved functional to you, it doesn't need to be polished at that po
 
 import logging
 import re
-from copy import deepcopy
-from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
-from lxml import builder, etree
-from lxml.html import builder as html_builder
+from delb import (
+    TagNode, TextNode, is_tag_node, altered_default_filters, is_text_node,
+    tag,
+)
 
-
-from inxs import dot_lookup, lxml_utils, Ref, singleton_handler
+from inxs import dot_lookup, Ref, singleton_handler, Transformation
 from inxs.utils import is_Ref, resolve_Ref_values_in_mapping
 
 # helpers
@@ -42,13 +42,13 @@ def export(func):
 
 @export
 @singleton_handler
-def add_html_classes(*classes, target=Ref('element')):
+def add_html_classes(*classes, target=Ref('node')):
     """ Adds the string tokens passed as positional arguments to the
-        ``classes`` attribute of an element specified by ``target``.
+        ``classes`` attribute of a node specified by ``target``.
         An argument can also be a sequence of strings or a :func:`~inxs.Ref` that
         yields on of the two.
-        Per default that is a :func:`~inxs.Ref` to the matching element of a
-        rule. """
+        Per default that is a :func:`~inxs.Ref` to the matching node of a rule.
+    """
 
     def add_items(_set, value):
         if isinstance(value, str):
@@ -72,34 +72,39 @@ def add_html_classes(*classes, target=Ref('element')):
             else:
                 add_items(_classes, cls)
 
-        element = target(transformation)
-        value = element.attrib.get('class', '').strip()
+        node = target(transformation)
+        value = node.attributes.get('class', '').strip()
         _classes.update(x.strip() for x in value.split() if x)
-        element.attrib['class'] = ' '.join(sorted(_classes))
+        node.attributes['class'] = ' '.join(sorted(_classes))
     return processor
 
 
 @export
 @singleton_handler
-def append(name, symbol=Ref('previous_result'), copy_element=False):
+def append(name, symbol=Ref('previous_result'), copy_node=False):
     """ Appends the object referenced by ``symbol`` (default: the result of the previous
-        :term:`handler function`) to the that is object available as ``name`` in the
-        :attr:`Transformation._available_symbols`. If the object is an element and
-        ``copy_element`` is ``True``, a copy is appended to the target. """
+        :term:`handler function`) to the object available as ``name`` in the
+        :attr:`Transformation._available_symbols`. If the object is a
+        :class:`delb.TagNode` instance and ``copy_node`` is ``True``, a copy
+        that includes all descendant nodes is appended to the target.
+    """
 
     def handler(previous_result, transformation):
         obj = symbol(transformation)
-        if copy_element and isinstance(obj, etree._Element):
-            obj = deepcopy(obj)
+        if isinstance(obj, TagNode) and copy_node:
+            obj = obj.clone(deep=True)
 
         if '.' in name:
-            namespace, path = name.split('.', 1)
+            namespace, path = name.split('.', maxsplit=1)
             target = transformation._available_symbols[namespace]
             target = dot_lookup(target, path)
         else:
             target = transformation._available_symbols[name]
 
-        target.append(obj)
+        if isinstance(target, TagNode):
+            target.append_child(obj)
+        else:
+            target.append(obj)
 
         return previous_result
 
@@ -107,17 +112,17 @@ def append(name, symbol=Ref('previous_result'), copy_element=False):
 
 
 @export
-def cleanup_namespaces(root, previous_result):
-    """ Cleanup the namespaces of the root element. This should always be used at the
-        end of a transformation when elements' namespaces have been changed. """
-    etree.cleanup_namespaces(root)
+def cleanup_namespaces(root: TagNode, previous_result: Any) -> Any:
+    """ Cleanup the namespaces of the tree. This should always be used at the
+        end of a transformation when nodes' namespaces have been changed. """
+    root.document.cleanup_namespaces()
     return previous_result
 
 
 @export
-def clear_attributes(element, previous_result):
-    """ Deletes all attributes of an element. """
-    element.attrib.clear()
+def clear_attributes(node: TagNode, previous_result: Any) -> Any:
+    """ Deletes all attributes of an node. """
+    node.attributes.clear()
     return previous_result
 
 
@@ -145,14 +150,17 @@ def concatenate(*parts):
 @export
 @singleton_handler
 def debug_dump_document(name='tree'):
-    """ Dumps all contents of the element referenced by ``name`` from the
+    """ Dumps all contents of the node referenced by ``name`` from the
         :attr:`inxs.Transformation._available_symbols` to the log at info level. """
 
     def handler(transformation):
-        try:
-            nfo(etree.tounicode(transformation._available_symbols[name]))
-        except KeyError:
+        node = transformation._available_symbols.get(name)
+        if node is None:
             nfo(f"No symbol named '{name}' found.")
+        elif not isinstance(node, TagNode):
+            nfo(f"Symbol '{name}' is not a TagNode.")
+        else:
+            nfo(str(node))
         return transformation.states.previous_result
 
     return handler
@@ -184,46 +192,6 @@ def debug_symbols(*names):
     return handler
 
 
-# REMOVE?
-@export
-def drop_siblings(left_or_right):
-    """ Removes all elements ``left`` or ``right`` of the processed element depending
-        which keyword was given. The same is applied to all ancestors. Think of it like
-        cutting a hedge from one side. It can be used as a processing step to strip the
-        document to a chunk between two elements that don't have the same parent node.
-    """
-    if left_or_right == 'left':
-        preceding = True
-    elif left_or_right == 'right':
-        preceding = False
-    else:
-        raise RuntimeError("'left_or_right' must be 'left' or …")
-
-    def processor(element):
-        if lxml_utils.is_root_element(element):
-            return
-        lxml_utils.remove_elements(*element.itersiblings(preceding=preceding))
-        parent = element.getparent()
-        if parent is not None:
-            processor(parent)
-
-    return processor
-
-
-@export
-@singleton_handler
-def extract_text(include_tail: bool = False, reduce_whitespace: bool = True):
-    """ Returns the extracted text by :func:`~inxs.lxml_utils.extract_text`. See its
-        docs regarding possible keyword arguments. """
-
-    def handler(element):
-        return lxml_utils.extract_text(
-            element, include_tail=include_tail, reduce_whitespaces=reduce_whitespace
-        )
-
-    return handler
-
-
 @export
 def f(func, *args, **kwargs):
     """ Wraps the callable ``func`` which will be called as ``func(*args, **kwargs)``,
@@ -251,30 +219,26 @@ def f(func, *args, **kwargs):
 @export
 @singleton_handler
 def get_attribute(name):
-    """ Gets the value of the element's attribute named ``name``. """
+    """ Gets the value of the node's attribute named ``name``. """
 
-    def evaluator(element):
-        return element.attrib.get(name)
+    def evaluator(node: TagNode):
+        return node.attributes.get(name)
 
     return evaluator
 
 
 @export
-def get_localname(element):
-    """ Gets the element's local tag name. """
-    return etree.QName(element).localname
+def get_localname(node):
+    """ Gets the node's local tag name. """
+    return node.local_name
 
 
 @export
-def get_tail(element):
-    """ Returns the tail of the matched element. """
-    return element.tail
-
-
-@export
-def get_text(element):
-    """ Returns the text of the matched element. """
-    return element.text
+def get_text(node: TagNode):
+    """ Returns the content of the matched node's descendants of :class:`delb.TextNode`
+        type.
+    """
+    return node.full_text
 
 
 @export
@@ -290,54 +254,37 @@ def get_variable(name):
 
 
 @export
-def has_attributes(element, _):
-    """ Returns ``True`` if the element has attributes. """
-    return bool(element.attrib)
+def has_attributes(node: TagNode, _):
+    """ Returns ``True`` if the node has attributes. """
+    return bool(node.attributes)
 
 
 @export
-def has_children(element, _):
-    """ Returns ``True`` if the element has descendants. """
-    return bool(len(element))
+def has_children(node: TagNode, _):
+    """ Returns ``True`` if the node has descendants. """
+    return node.first_child is not None
 
 
 @export
 @singleton_handler
-def has_matching_text(pattern):
-    """ Returns ``True`` if the element has a text that matches the provided
-        ``pattern``. """
+def has_matching_text(pattern: str):
+    """ Returns ``True`` if the text contained by the node and its descendants has a
+        matches the provided ``pattern``. """
     pattern = re.compile(pattern)
 
-    def evaluator(element, _):
-        return element.text is not None and pattern.match(element.text)
+    def evaluator(node: TagNode, _):
+        return pattern.match(node.full_text)
 
     return evaluator
 
 
 @export
-def has_tail(element, _):
-    """ Returns ``True`` if the element has a tail. """
-    return bool(element.tail)
-
-
-@export
-def has_text(element, _):
-    """ Returns ``True`` if the element has text content. """
-    return bool(element.text)
-
-
-@export
-def init_elementmaker(name: str = 'e', **kwargs):
-    """ Adds a :class:`lxml.builder.ElementMaker` as ``name`` to the context.
-        ``kwargs`` for its initialization can be passed. """
-    if 'namespace' in kwargs and 'nsmap' not in kwargs:
-        kwargs['nsmap'] = {None: kwargs['namespace']}
-
-    def wrapped(context, previous_result):
-        setattr(context, name, builder.ElementMaker(**kwargs))
-        return previous_result
-
-    return wrapped
+def has_text(node: TagNode, _):
+    """ Returns ``True`` if the node has any :class:`delb.TextNode`. """
+    with altered_default_filters(is_text_node):
+        for _ in node.child_nodes(recurse=True):
+            return True
+    return False
 
 
 @export
@@ -347,11 +294,11 @@ def insert_fontawesome_icon(name: str, position: str, spin: bool = False):
         ``name`` at ``position`` of which only ``after`` is implemented atm.
 
         It employs semantics for Font Awesome 5. """
-    def after_handler(element):
+    def after_handler(node: TagNode):
         classes = f'fas fa-{name}'
         if spin:
             classes += ' fa-spin'
-        element.append(html_builder.I(html_builder.CLASS(classes)))
+        node.add_next(tag("i", {"class": classes}))
 
     return {
         'after': after_handler,
@@ -377,62 +324,15 @@ def lowercase(previous_result):
 
 
 @export
-def make_element(tag, namespace_s=None, attributes=None, text=None):
-    """ This handler creates an empty element with the given ``tag``. The tag can
-        have a prefix. If ``namespace_s`` is ``None`` the namespace mapping of the
-        :term:`transformation root` is used as context. If given as :term:`mapping`,
-        this is used as context. It can also be provided as string, which is then used
-        as default namespace. """
+def make_node(**node_args):
+    """ Creates a new tag node in the root node's context, takes the arguments of
+        :meth:`delb.TagNode.new_tag_node` that must be provided as keyword arguments.
+        The node is then available as symbol ``previous_result``.
+    """
 
-    def handler(transformation, nsmap):
-        if is_Ref(tag):
-            _tag = tag(transformation)
-        else:
-            _tag = tag
-
-        if namespace_s is None:
-            _namespace_s = nsmap
-        elif is_Ref(namespace_s):
-            _namespace_s = namespace_s(transformation)
-        else:
-            _namespace_s = namespace_s
-
-        if attributes is None:
-            extra = {}
-        else:
-            extra = resolve_Ref_values_in_mapping(attributes, transformation)
-
-        if isinstance(_namespace_s, str):
-            result = etree.Element('{' + _namespace_s + '}' + _tag, **extra)
-        else:
-            if ':' in _tag:
-                prefix, _tag = _tag.split(':', 1)
-                _tag = '{' + _namespace_s[prefix] + '}' + _tag
-            result = etree.Element(_tag, nsmap=_namespace_s, **extra)
-
-        if is_Ref(text):
-            _text = text(transformation)
-        else:
-            _text = text
-        result.text = _text
-
-        return result
-
-    return handler
-
-
-@export
-@singleton_handler
-def merge(src='previous_result', dst='root'):
-    """ A wrapper around :func:`inxs.lxml_util.merge_nodes` that passes the objects
-        referenced by ``src`` and ``dst``. """
-
-    def handler(transformation):
-        _src = transformation._available_symbols[src]
-        _dst = transformation._available_symbols[dst]
-        assert etree.QName(_src).text == etree.QName(_dst).text, \
-            f'{etree.QName(_src).text} != {etree.QName(_dst).text}'
-        lxml_utils.merge_nodes(_src, _dst)
+    def handler(root, transformation):
+        _node_args = resolve_Ref_values_in_mapping(node_args, transformation)
+        return root.new_tag_node(**_node_args)
 
     return handler
 
@@ -440,10 +340,10 @@ def merge(src='previous_result', dst='root'):
 @export
 @singleton_handler
 def pop_attribute(name: str):
-    """ Pops the element's attribute named ``name``. """
+    """ Pops the node's attribute named ``name``. """
 
-    def handler(element) -> str:
-        return element.attrib.pop(name)
+    def handler(node: TagNode) -> str:
+        return node.attributes.pop(name)
 
     return handler
 
@@ -457,11 +357,11 @@ def pop_attributes(*names: str, ignore_missing=False):
     handlers = {x: pop_attribute(x) for x in names}
     del names
 
-    def handler(element) -> Dict[str, str]:
+    def handler(node: TagNode) -> Dict[str, str]:
         result = {}
         for name, _handler in handlers.items():
             try:
-                result[name] = _handler(element)
+                result[name] = _handler(node)
             except KeyError:
                 if not ignore_missing:
                     raise
@@ -509,30 +409,80 @@ def put_variable(name, value=Ref('previous_result')):
 
 
 @export
-def remove_element(element):  # REMOVE?
-    """ A very simple handler that just removes an element from a tree. """
-    lxml_utils.remove_elements(element)
+@singleton_handler
+def remove_attributes(*names):
+    """ Removes all attributes with the keys provided as ``names`` from the node. """
+
+    def handler(node: TagNode, previous_result: Any) -> Any:
+        for name in names:
+            node.attributes.pop(name, None)
+        return previous_result
+
+    return handler
+
+
+@export
+def remove_namespace(node: TagNode, previous_result):
+    """ Removes the namespace from the node.
+        When used, :func:`cleanup_namespaces` should be applied at the end of the
+        transformation. """
+    node.namespace = None
+    return previous_result
+
+
+@export
+def remove_node(node: TagNode):
+    """ A very simple handler that just removes a node and its descendants from a
+        tree. """
+    node.detach()
 
 
 @export
 @singleton_handler
-def remove_elements(references, keep_children=False, preserve_text=False,
-                    preserve_tail=False,
-                    clear_ref=True):
-    """ Removes all elements from the document that are referenced in a list that is
-        available as ``references``. ``keep_children`` and ``preserve_texte`` are
-        passed to
-        :func:`inxs.lxml_utils.remove_element`. The reference list is cleared
-        afterwards if
-        ``clear_ref`` is ``True``. """
+def remove_nodes(
+        references,
+        keep_children=False,
+        preserve_text=False,
+        clear_ref=True
+):
+    """ Removes all nodes from their tree that are referenced in a list that is
+        available as ``references``. The nodes' children are retained when
+        ``keep_children`` is passed as ``True``, or only the contained text when
+        ``preserve_text`` is passed as ``True``. The reference list is cleared
+        afterwards if ``clear_ref`` is ``True``.
+    """
 
     def handler(transformation):
-        elements = transformation._available_symbols[references]
-        lxml_utils.remove_elements(*elements, keep_children=keep_children,
-                                   preserve_text=preserve_text,
-                                   preserve_tail=preserve_tail)
+        nodes = transformation._available_symbols[references]
+
+        for node in nodes:
+
+            if not keep_children:
+                # retain descendants' text
+                for child in tuple(node.child_nodes(is_tag_node)):
+                    if preserve_text:
+                        child.replace_with(child.full_text)
+                    else:  # or just be quick at removal
+                        child.detach()
+            node.merge_text_nodes()
+
+            if preserve_text:
+                filters = ()
+            else:
+                filters = (is_tag_node,)
+
+            # move remaining child nodes after the target
+            children = tuple(node.child_nodes(*filters))
+            if children:
+                for child in children:
+                    child.detach()
+                node.add_next(*children)
+
+            # remove the target
+            node.detach()
+
         if clear_ref:
-            elements.clear()
+            nodes.clear()
         return transformation.states.previous_result
 
     return handler
@@ -540,65 +490,45 @@ def remove_elements(references, keep_children=False, preserve_text=False,
 
 @singleton_handler
 def _rename_attributes(translation_map: Tuple[Tuple[str, str], ...]) -> Callable:
-    def handler(element) -> None:
+    def handler(node: TagNode) -> None:
         for _from, to in translation_map:
-            element.attrib[to] = element.attrib.pop(_from)
+            node.attributes[to] = node.attributes.pop(_from)
 
     return handler
 
 
 @export
 def rename_attributes(translation_map: Mapping[str, str]) -> Callable:
-    """ Renames the attributes of an element according to the provided
-        ``translation_table`` that consists of old name keys and new name values. """
+    """ Renames the attributes of a node according to the provided
+        ``translation_map`` that consists of old name keys and new name values.
+    """
     return _rename_attributes(tuple((k, v) for k, v in translation_map.items()))
 
 
+# FIXME test this
 @export
 @singleton_handler
-def replace_text(old: Union[str, Callable], new: Union[str, Callable],
-                 text=True, tail=False) -> Callable:
-    """ Replaces the substring ``old`` in an element's text and tail (depending on
-        the boolean arguments with that name) with the string given as ``new``,
-        both strings can
-        be provided as references to a transformation's symbols. """
-
-    # TODO input type specialized handlers
-    def handler(element, transformation):
-        _old = old(transformation) if is_Ref(old) else old
-        _new = new(transformation) if is_Ref(new) else new
-        if text and element.text:
-            element.text = element.text.replace(_old, _new)
-        if tail and element.tail:
-            element.tail = element.tail.replace(_old, _new)
-        return transformation.states.previous_result
-
-    return handler
-
-
-@export
-@singleton_handler
-def resolve_xpath_to_element(*names):
-    """ Resolves the objects from the context (which are supposed to be XPath
-        expressions) referenced by ``names`` with the *one* element that the XPaths
-        yield or
-        ``None``. This is useful when a copied tree is processed and 'XPath pointers'
-        are passed to the
-        :term:`context` when a :class:`inxs.Transformation` is called. """
+def resolve_xpath_to_node(*names):
+    """ Resolves the objects from the context namespace (which are supposed to be XPath
+        expressions) referenced by ``names`` with the *one* node that the expression
+        matches or ``None``. This is useful when a copied tree is processed and
+        'XPath pointers' are passed to the :term:`context` when a
+        :class:`inxs.Transformation` is called.
+    """
 
     def resolver(context, transformation):
         for name in names:
-            xpath = getattr(context, name)
-            if not xpath:
+            expression = getattr(context, name)
+            if not expression:
                 setattr(context, name, None)
                 continue
-            resolved_elements = transformation.xpath_evaluator(xpath)
-            if not resolved_elements:
+            resolved_nodes = transformation.root.xpath(expression)
+            if not resolved_nodes:
                 setattr(context, name, None)
-            elif len(resolved_elements) == 1:
-                setattr(context, name, resolved_elements[0])
+            elif len(resolved_nodes) == 1:
+                setattr(context, name, resolved_nodes[0])
             else:
-                raise RuntimeError(f'More than one element matched {xpath}')
+                raise RuntimeError(f'More than one node matched {expression}')
         return transformation.states.previous_result
 
     return resolver
@@ -609,12 +539,14 @@ def resolve_xpath_to_element(*names):
 def set_attribute(name, value=Ref('previous_result')):
     """ Sets an attribute ``name`` with ``value``. """
 
-    def simple_handler(element, previous_result):
-        element.attrib[name] = value
+    def simple_handler(node: TagNode, previous_result: Any) -> Any:
+        node.attributes[name] = value
         return previous_result
 
-    def resolving_handler(element, previous_result, transformation):
-        element.attrib[name] = value(transformation)
+    def resolving_handler(
+            node: TagNode, previous_result: Any, transformation: Transformation
+    ) -> Any:
+        node.attributes[name] = value(transformation)
         return previous_result
 
     if isinstance(value, str):
@@ -626,15 +558,10 @@ def set_attribute(name, value=Ref('previous_result')):
 @export
 @singleton_handler
 def set_localname(name):
-    """ Sets the element's localname to ``name``. """
+    """ Sets the node's localname to ``name``. """
 
-    def handler(element, previous_result):
-        namespace = etree.QName(element).namespace
-        if namespace is None:
-            qname = etree.QName(name)
-        else:
-            qname = etree.QName(namespace, name)
-        element.tag = qname.text
+    def handler(node: TagNode, previous_result: Any):
+        node.local_name = name
         return previous_result
 
     return handler
@@ -643,15 +570,25 @@ def set_localname(name):
 @export
 @singleton_handler
 def set_text(text=Ref('previous_result')):
-    """ Sets the element's text to the one provided as ``text``, it can also be a
-        :func:`inxs.Ref`."""
+    """ Sets the nodes's first child node that is of :class:`delb.TextNode` type to the
+        one provided as ``text``, it can also be a :func:`inxs.Ref`.
+        If the first node isn't a text node, one will be inserted. """
 
-    def ref_handler(element, transformation):
-        element.text = text(transformation)
+    def ref_handler(node: TagNode, transformation: Transformation):
+        _text = text(transformation)
+        target = node.first_child
+        if target is None or not isinstance(node, TextNode):
+            node.insert_child(0, _text)
+        else:
+            target.content = _text
         return transformation.states.previous_result
 
-    def static_handler(element, previous_result):
-        element.text = text
+    def static_handler(node: TagNode, previous_result):
+        target = node.first_child
+        if target is None or not isinstance(node, TextNode):
+            node.insert_child(0, text)
+        else:
+            target.content = text
         return previous_result
 
     return ref_handler if is_Ref(text) else static_handler
@@ -659,7 +596,7 @@ def set_text(text=Ref('previous_result')):
 
 @export
 @singleton_handler
-def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
+def sort(name: str = 'previous_result', key: Callable = lambda x: x):
     """ Sorts the object referenced by ``name`` in the :term:`context` using ``key`` as
         :term:`key function`. """
 
@@ -671,39 +608,12 @@ def sorter(name: str = 'previous_result', key: Callable = lambda x: x):
 
 @export
 @singleton_handler
-def strip_attributes(*names):
-    """ Strips all attributes with the keys provided as ``names`` from the element. """
-
-    def handler(element, previous_result):
-        for name in names:
-            element.attrib.pop(name, None)
-        return previous_result
-
-    return handler
-
-
-@export
-def strip_namespace(element, previous_result):
-    """ Removes the namespace from the element.
-        When used, :func:`cleanup_namespaces` should be applied at the end of the
-        transformation. """
-    element.tag = etree.QName(element).localname
-    return previous_result
-
-
-@export
-def sub(*args, **kwargs):
-    """ A wrapper around :func:`inxs.lxml_utils.subelement` for usage as
-        :term:`handler function`. """
-    return f(lxml_utils.subelement, *args, **kwargs)
-
-
-@export
-@singleton_handler
 def text_equals(text):
-    """ Tests whether the evaluated element's text matches ``text``. """
+    """ Tests whether the evaluated node's text contained by its descendants is equal to
+        ``text``.
+    """
 
-    def evaluator(element, _):
-        return element.text == text
+    def evaluator(node: TagNode, _):
+        return node.full_text == text
 
     return evaluator

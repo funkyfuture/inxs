@@ -2,20 +2,19 @@ Usage
 =====
 
 ``inxs`` is designed to allow Pythonistas and other cultivated folks to write sparse and readable
-transformations that take lxml_ objects as input. Most likely they will return the same, but
+transformations that take delb_ objects as input. Most likely they will return the same, but
 there's no limitation into what the data can be mangled.
-It does so by providing a framework that traverses an XML tree, tests elements, pulls and
+It does so by providing a framework that traverses an XML tree, tests tag nodes, pulls and
 manipulates data in a series of steps. It supports the combination of reusable and generalized
 logical units of expressions and actions. Therefore there's also a library with functions to deploy
 and a module with contributed transformations.
 
-.. _lxml: http://lxml.de/
+.. _delb: https://pypi.org/project/delb/
 
 Though ``inxs`` should be usable for any problem that XSLT could solve, it is not modeled to
 address XSLT users to get a quick grip on it. Anyone who enjoys XSLT should continue to do so.
 So far the framework performs with acceptable speed with uses on text documents from the
-humanities. Some optimizations will certainly be investigated, but speed is not a design aim of the
-project.
+humanities.
 
 Let's break its usage down with the second example from the ``README``:
 
@@ -23,87 +22,94 @@ Let's break its usage down with the second example from the ``README``:
    :linenos:
 
     transformation = Transformation(
-        lib.init_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
         generate_skeleton,
         Rule('person', extract_person),
-        lib.sorter('persons', itemgetter(1)),
+        lib.sort('persons', itemgetter(1)),
         list_persons,
         result_object='context.html', context={'persons': []})
 
 A transformation is set up by instantiating a :class:`inxs.Transformation` (line 1) with a series
-of :term:`transformation steps` (lines 2-6) passed as positional :term:`argument` s and two
-:term:`configuration` values (line 7) provided as keyword arguments.
+of :term:`transformation steps` (lines 2-5) passed as positional :term:`argument` s and two
+:term:`configuration` values (line 6) provided as keyword arguments.
 
-The first step in line 2 uses :func:`inxs.lib.init_elementmaker` to put an ElementMaker_ instance
-into the :term:`context` namespace. In this case its name will be the default ``e``, the
-``namespace`` argument is passed to its initialization.
-
-.. _ElementMaker: http://lxml.de/api/lxml.builder.ElementMaker-class.html
-
-Now handler functions can consume that as an argument. So does the one referenced in line 3:
+The first step (line 2) is a function that creates a skeleton for the resulting HTML markup and
+stores it in the ``context`` namespace:
 
 .. code-block:: python
 
-    def generate_skeleton(context, e):
-        context.html = e.html(
-            e.head(e.title('Testing XML Example')),
-            e.body(e.h1('Persons'), e.ul()))
-        context.persons_list = context.html.xpath('./body/ul', smart_prefix=True)[0]
+    def generate_skeleton(context):
+        context.html = new_tag_node(
+            "html", namespace='http://www.w3.org/1999/xhtml',
+            children=(
+                tag("head",
+                    tag("title", "Testing XML Example")),
+                tag("body", (
+                    tag("h1", "Persons"),
+                    tag("ul")
+                )),
+            )
+        )
 
 When a transformation calls a handler function it does so by applying dependency injection as may
 be known from pytest's fixtures_. The passed arguments are resolved from
 :attr:`inxs.Transformation._available_symbols` where any object that has previously been added to
-the context is available (``e`` so far) as well as the ``context`` itself. After a bare HTML tree
-is generated, the ``ul`` element within it is added to the context as ``persons_list``.
+the ``context`` namespace is available as well as the ``context`` itself.
 
 .. _fixtures: https://docs.pytest.org/en/latest/fixture.html
 
-Line 4 defines something that is used more often in real world uses than here. A :class:`inxs.Rule`
+Line 3 defines something that is used more often in real world uses than here. A :class:`inxs.Rule`
 that tests the :term:`transformation root` and its descendants for defined properties. In the
-example all elements with a ``person`` tag will be passed to this :term:`handler function`:
+example all nodes with a ``person`` tag will be passed to the associated
+:term:`handler function`:
 
 .. code-block:: python
 
-    def extract_person(element, persons):
-        persons.append((element.find('name').text, element.find('family-name').text))
+    def extract_person(node: TagNode, persons):
+        persons.append(
+            (first(node.css_select("name")).full_text,
+             first(node.css_select("family-name")).full_text)
+        )
 
-The `lxml.Element`_ API is used to get name and family name and append them in a tuple to a list
-that was defined in the ``context`` argument of the configuration values (line 7).
+`delb`'s API is used to fetch child nodes of the matching nodes, extract their text and appends
+them in a tuple to a list that was defined in the ``context`` argument of the configuration values
+(line 7).
 
-.. _lxml.Element: http://lxml.de/api/lxml.etree._Element-class.html
-
-Rules can also test anything outside the scope of an element, the utilized functions however aren't
-'dependency injected' to avoid overhead. They are called with ``element`` and ``transformation`` as
+Rules can also test anything outside the scope of a node, the utilized functions however aren't
+'dependency injected' to avoid overhead. They are called with ``node`` and ``transformation`` as
 arguments and take it from there. See :func:`inxs.If` for an example.
 
-The last two steps (line 5 and 6) eventually sort (:func:`inxs.lib.sorter` with
-:func:`operator.itemgetter`) and append the data to the HTML tree that was prepared in line 3:
+The last two steps (line 4 and 5) eventually sort (:func:`inxs.lib.sort` with
+:func:`operator.itemgetter`) and append the data to the HTML tree that was prepared by the step in
+line 2:
 
 .. code-block:: python
 
-    def list_persons(previous_result, persons_list, e):
-        persons_list.extend(e.li(f'{x[1]}, {x[0]}') for x in previous_result)
+    def list_persons(previous_result, html: TagNode):
+        first(html.css_select("html|body html|ul")).append_child(
+            *(html.new_tag_node("li", children=[f'{x[1]}, {x[0]}'])
+              for x in previous_result)
+        )
 
 The argument ``previous_result`` is resolved to the object that the previous function returned,
-again the Element API and Python's :term:`f-string` s are used to generate the result.
+again the ``delb`` API and Python's :term:`f-string` s are used to generate the result.
 
 As the transformation was configured with ``context.html`` as result object, the transformation
-returns the object referenced as ``html`` (see handler function in line 3) from the context. If the
+returns the object referenced as ``html`` (see handler function in line 2) from the context. If the
 transformation hasn't explicitly configured a result object, (per default a copy of) the
 :term:`transformation root` is returned. Any other data is discarded.
 
-The initialized transformation can now be called with an lxml element as
-:term:`transformation root`:
+The initialized transformation can now be called with a :class:`delb.Document` or
+:class:`delb.TagNode` instance as :term:`transformation root`:
 
-    >>> result = transformation(xml_element)  # doctest: +SKIP
+    >>> result = transformation(document)  # doctest: +SKIP
 
-A :term:`transformation root` doesn't need to be the document's root, leaving siblings and
-ancestors untouched. A transformation works on a copy of the document's tree unless the
-configuration contains a key ``copy`` set to ``False`` or the transformation is called with such
-keyword argument.
+A :term:`transformation root` can be any node within a document, leaving siblings and ancestors
+untouched. A transformation works on a copy of the document's tree unless the configuration
+contains a key ``copy`` set to ``False`` or the transformation is called with such keyword
+argument.
 
 Transformations can also be used as simple steps - then invoked with the
-:term:`transformation root` - or as rule handlers - then invoked with each matching element.
+:term:`transformation root` - or as rule handlers - then invoked with each matching node.
 Per default these do not operate on copies, to do so :func:`inxs.lib.f` can be employed:
 
 .. code-block:: python
@@ -111,13 +117,12 @@ Per default these do not operate on copies, to do so :func:`inxs.lib.f` can be e
     # as a simple step
     f(sub_transformation, 'root', copy=True)
     # as a rule handler
-    f(sub_transformation, 'element', copy=True)
+    f(sub_transformation, 'node', copy=True)
 
 Any transformation step, condition or handler can be grouped into :term:`sequence` s to encourage
 code recycling - But don't take that as a permission to barbarously patching fragments of existing
 solutions together that you might feel are similar to your problem. It's taken care that the
-items are retained as when then a transformation was initialized if groups were :term:`mutable`
-types.
+items are retained as when a transformation was initialized if groups were :term:`mutable` types.
 
 Now that the authoritarian part is reached, be advised that using expressive and unambiguous names
 is essential when designing transformations and their components. As a rule of thumb, a simple
@@ -164,18 +169,17 @@ Rule condition shortcuts
 Strings can be used to specify certain rule conditions:
 
 - ``/`` selects only the :term:`transformation root`
-- ``*`` selects all elements - should only be used if there are no other conditions
-- any string that contains a colon (but not more that one consecutively) selects elements with
-  a namespace that matches the string
-- strings that contain only letters select elements whose *local* name matches the string
+- ``*`` selects all nodes - should only be used if there are no other conditions
+- any string that contains ``://`` selects nodes with a namespace that matches the string
+- strings that contain only letters select nodes whose *local* name matches the string
 - if a string can be translated to an XPath expression with cssselect_ and thus can be considered a
   valid css selector, the result is used like the following; mind that you can use
-  `namespace prefixes`_ if you know the prefixes, otherwise this is not an option to match an
-  element from a namespace that's not the :term:`transformation root`'s default
-- all other strings will select all elements that an XPath evaluation of that string on the
+  `namespace prefixes`_ if you know the prefixes, otherwise this is not an option to match a
+  node from a namespace that's not the :term:`transformation root`'s default
+- all other strings will select all nodes that an XPath evaluation of that string on the
   :term:`transformation root` returns
 
-Another shortcut is to pass a dictionary to test an element's attributes, see
+Another shortcut is to pass a dictionary to test an node's attributes, see
 :func:`inxs.MatchesAttributes` for details.
 
 Speaking of conditions, see :func:`inxs.Any`, :func:`inxs.OneOf` and :func:`inxs.Not` to overcome
@@ -201,18 +205,18 @@ Caveats
 Modifications during iteration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Similar to iteration over mutable types in Python, adding, moving or deleting elements to the
-tree breaks the iteration of a rule over elements. Thus such modifications must be applied in a
-simple transformation step; e.g. to remove all ``<br>`` elements from a document:
+Similar to iteration over mutable types in Python, adding, moving or deleting nodes to the
+tree breaks the iteration of a rule over nodes. Thus such modifications must be applied in a
+simple transformation step; e.g. to remove all ``<br>`` nodes from a document:
 
 .. code-block:: python
 
-    def collect_trash(element, trashbin):
-        trashbin.append(element)
+    def collect_trash(node, trashbin):
+        trashbin.append(node)
 
     transformation = Transformation(
-        Rule('//br', collect_trash),
-        lib.remove_elements('trashbin'),
+        Rule('br', collect_trash),
+        lib.remove_nodes('trashbin'),
         context={'trashbin': []})
 
 
@@ -262,10 +266,11 @@ Glossary
       the time the function gets called.
 
    transformation root
-      This is the element that a transformation instance is called with. Any traverser will return
+      This is the node that a transformation instance is called with. Any traverser will return
       neither its ancestors nor its siblings.
 
    transformation steps
       Transformation steps are :term:`handler functions <handler function>` or :class:`inxs.Rule`
       s that define the actions taken when a transformation is processed. The steps are stored as
-      a linear graph, rudimentary branching can be achieved by using rules.
+      a linear graph, rudimentary branching can be achieved by using rules that call other
+      transformations.

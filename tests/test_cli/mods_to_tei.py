@@ -1,103 +1,112 @@
 import operator as op
 
-from inxs import lib, AbortRule, If, Once, Ref, Rule, Transformation
-from inxs.lxml_utils import find
-from lxml import builder, etree  # noqa
+from delb import first, new_tag_node, TagNode, tag
 
-METS_NAMESPACE = 'http://www.loc.gov/METS/'
+from inxs import lib, If, Once, Ref, Rule, Transformation
+
 MODS_NAMESPACE = 'http://www.loc.gov/mods/v3'
 TEI_NAMESPACE = 'http://www.tei-c.org/ns/1.0'
 
-NAMESPACE_MAP = {
-    'mets': METS_NAMESPACE,
-    'mods': MODS_NAMESPACE,
-    'tei': TEI_NAMESPACE
-}
 
 as_result = lib.put_variable('result')
 f = lib.f
 prev = Ref('previous_result')
 result = Ref('result')
-tei = builder.ElementMaker(namespace=TEI_NAMESPACE,
-                           nsmap={None: TEI_NAMESPACE})
 
 
 def generate_skeleton(context):
-    context.biblFull_titleStmt = tei.titleStmt()
-    context.msDesc = tei.msDesc()
-    context.publicationStmt = tei.publicationStmt()
-    context.titleStmt = tei.titleStmt()
+    header = context.result = new_tag_node("teiHeader", namespace=TEI_NAMESPACE)
 
-    context.result = tei.teiHeader(
-        tei.fileDesc(
-            tei.sourceDesc(
+    context.biblFull_titleStmt = header.new_tag_node("titleStmt")
+    context.msDesc = header.new_tag_node("msDesc")
+    context.publicationStmt = header.new_tag_node("publicationStmt")
+    context.titleStmt = header.new_tag_node("titleStmt")
+
+    header.append_child(
+        tag("fileDesc", (
+            tag("sourceDesc", (
                 # TODO? tei.bibl(),
-                tei.biblFull(
+                tag("biblFull", (
                     context.publicationStmt,
                     context.biblFull_titleStmt
-                ),
+                )),
                 context.msDesc,
-            ),
+            )),
             context.titleStmt
-        ),
-        tei.encodingDesc(),
-        tei.profileDesc()
+        )),
+        tag("encodingDesc"),
+        tag("profileDesc"),
     )
 
 
-def get_title(element, titleStmt, biblFull_titleStmt):
-    non_sort = find(element, 'mods:nonSort')
-    main_title = (non_sort.text + ' ') if non_sort is not None else ''
-    main_title += find(element, 'mods:title').text
-    sub_title = find(element, 'mods:subTitle').text
+def get_title(node: TagNode, titleStmt: TagNode, biblFull_titleStmt: TagNode):
+    non_sort = first(node.css_select('mods|nonSort'))
+    main_title = (non_sort.full_text + ' ') if non_sort is not None else ''
+    main_title += first(node.css_select('mods|title')).full_text
+    sub_title = first(node.css_select('mods|subTitle')).full_text
 
     for target in (titleStmt, biblFull_titleStmt):
-        target.extend((
-            tei.title(main_title, type='main'),
-            tei.title(sub_title, type='sub')
-        ))
+        target.append_child(
+            tag("title", {"type": "main"}, main_title),
+            tag("title", {"type": "sub"}, sub_title),
+        )
 
 
-def get_publication(element, publicationStmt):
-    place = element.xpath('./mods:place/mods:placeTerm[@type="text"]',
-                          smart_prefix=True)[0].text
-    publicationStmt.extend((
-        tei.publisher(
-            tei.name(find(element, 'mods:publisher').text)),
-        tei.pubPlace(place),
-        tei.date(find(element, 'mods:dateIssued').text, type='creation'))
+def get_publication(node: TagNode, publicationStmt: TagNode):
+    date = first(node.css_select("mods|dateIssued")).full_text
+    name = first(node.css_select("mods|publisher")).full_text
+    place = first(node.xpath('./mods:place/mods:placeTerm[@type="text"]')).full_text
+
+    publicationStmt.append_child(
+        tag("publisher",
+            tag("name", name)),
+        tag("pubPlace", place),
+        tag("date", {"type": "creation"}, date)
     )
 
 
 mods_name = Transformation(
     Once(('roleTerm', {'type': 'text'}, lib.text_equals('author')),
-         (lib.make_element('author', TEI_NAMESPACE), as_result,
-          lib.put_variable('role', 'author'))),
+         (lib.make_node(local_name='author', namespace=TEI_NAMESPACE), as_result,
+          lib.put_variable('role', 'author'),)
+         ),
 
     Once(('namePart', {'type': 'family'}),
-         (lib.get_text, lib.sub(result, 'surname', text=prev))),
+         (lib.get_text,
+          lib.f(tag, "surname", prev),
+          lib.append("result"),)
+         ),
+
     Once(('namePart', {'type': 'given'}),
-         (lib.get_text, lib.sub(result, 'forename', text=prev))),
+         (lib.get_text,
+          lib.f(tag, "forename", prev),
+          lib.append("result"),)
+         ),
 
     Once(If(Ref('role'), op.eq, 'author'),
-         (lib.append('outer_context.titleStmt', Ref('result'), copy_element=True),
+         (lib.append('outer_context.titleStmt', Ref('result'), copy_node=True),
           lib.append('outer_context.biblFull_titleStmt', Ref('result'),
-                     copy_element=True))),
+                     copy_node=True),)
+         ),
 
     common_rule_conditions=MODS_NAMESPACE,
     copy=False, result_object=None
 )
 
 mods_location = Transformation(
-    f(etree.Element, 'msIdentifier', nsmap={None: TEI_NAMESPACE}),
+    f(new_tag_node, 'msIdentifier', namespace=TEI_NAMESPACE),
     as_result,
 
     Rule('physicalLocation',
          (lib.get_text, f(str.strip, prev),
-          lib.sub(result, 'repository', text=prev))),
+          lib.f(tag, "repository", prev),
+          lib.append("result")),
+         ),
     Rule('shelfLocator',
          (lib.get_text, f(str.strip, prev),
-          lib.sub(result, 'idno', text=prev, type='shelfmark'))),
+          lib.f(tag, "idno", {"type": "shelfmark"}, prev),
+          lib.append("result")),
+         ),
 
     common_rule_conditions=MODS_NAMESPACE,
     copy=False, result_object='context.result'
@@ -108,18 +117,18 @@ from_mods = Transformation(
 
     Rule('titleInfo', get_title),
     Rule('name',
-         f(mods_name, Ref('element'), outer_context=Ref('context'))),
+         f(mods_name, Ref('node'), outer_context=Ref('context'))),
     Rule('originInfo', get_publication),
     Rule('location',
-         (f(mods_location, Ref('element')), lib.append('msDesc'))),
+         (f(mods_location, Ref('node')), lib.append('msDesc'))),
 
     common_rule_conditions=MODS_NAMESPACE,
     result_object='context.result'
 )
 
 main = Transformation(
-    Rule((MODS_NAMESPACE, 'mods'),
-         (f(from_mods, Ref('root'), copy=True), as_result,
-          AbortRule)),
+    Once((MODS_NAMESPACE, 'mods'),
+         (f(from_mods, Ref('node'), copy=True), as_result)
+         ),
     result_object='context.result'
 )

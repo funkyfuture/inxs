@@ -92,8 +92,8 @@ pygments_style = 'sphinx'
 
 # -- Options for intersphinx extension -----------------------------------------
 
-intersphinx_mapping = {'py2': ('https://docs.python.org/2', None),
-                       'py3': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {'python': ('https://docs.python.org/', None),
+                       'delb': ('https://delb.readthedocs.io/en/latest/', None)}
 
 
 # -- Options for HTML output -------------------------------------------

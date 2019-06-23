@@ -1,41 +1,25 @@
+from delb import TextNode, Document
 from lxml import etree
 
 xml_parser = etree.XMLParser(remove_blank_text=True)
 
 
 def equal_documents(path_x, path_y):
-    with open(path_x, 'rt') as f:
-        x = etree.parse(f)
-    with open(path_y, 'rt') as f:
-        y = etree.parse(f)
-    return equal_subtree(x.getroot(), y.getroot(), ignore_whitespaces=True)
+    x = Document(path_x)
+    y = Document(path_y)
+    return equal_subtree(x.root, y.root)
 
 
-def equal_subtree(element, other_element, ignore_whitespaces=False):
-    def compare_text(text, other_text):
-        if ignore_whitespaces:
-            if text is None:
-                text = ''
-            text = text.strip()
-            if other_text is None:
-                other_text = ''
-            other_text = other_text.strip()
-        return text == other_text
+def equal_subtree(node, other_node):
+    """ Roughly regarding TextNode's whitespaces. """
 
-    assert etree.QName(element) == etree.QName(other_element), \
-        f'{etree.QName(element)} != {etree.QName(other_element)}'
-    assert element.attrib == other_element.attrib
-    assert compare_text(element.text, other_element.text), \
-        f'{element.text} != {other_element.text}'
-    assert compare_text(element.tail, other_element.tail), \
-        f'{element.tail} != {other_element.tail}'
-    assert len(element) == len(other_element), \
-        f'{element.tag}: {len(element)} / {len(other_element)}'
-    assert all(
-        equal_subtree(x, y, ignore_whitespaces) for x, y in zip(element, other_element)
-    )
+    if isinstance(node, TextNode):
+        assert node.strip() == other_node.strip()
+    else:
+        assert node == other_node, f"{node} != {other_node}"
+        assert len(node) == len(other_node)
+
+    for child, other_child in zip(node.child_nodes(), other_node.child_nodes()):
+        equal_subtree(child, other_child)
+
     return True
-
-
-def parse(text: str) -> etree._Element:
-    return etree.fromstring(text.strip(), parser=xml_parser)

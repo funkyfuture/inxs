@@ -10,7 +10,7 @@ TODO
 Am I cognitively fit to use ``inxs``?
 -------------------------------------
 
-If you're comfortable with Python and ``lxml``, you propably are. Just give it a try to solve a
+If you're comfortable with Python and delb_, you propably are. Just give it a try to solve a
 smaller problem. If you don't get a grip on something that may be due to the immature
 documentation.
 
@@ -19,6 +19,7 @@ to test your understanding and assumptions without ``inxs`` as well. bpython_ an
 great playgrounds.
 
 .. _bpython: https://bpython-interpreter.org/
+.. _delb: https://pypi.org/project/delb/
 .. _Jupyter: https://jupyter.org/
 
 
@@ -30,3 +31,16 @@ Mind that you can't get supported to solve your actual problem, but rather to un
 ``inxs`` as a tool to do so.
 
 .. _issue tracker: https://github.com/funkyfuture/inxs/issues
+
+
+Can I produce HTML output with ``inxs``?
+----------------------------------------
+
+One thing you may do is to rather produce XHTML, but that is lacking modern HTML features you may
+want to use. Here's a trick to produce actual HTML:
+
+- produce an XML tree without namespace declarations using the HTML tag set
+- serialize the result into a string
+- mangle that through pytidylib_
+
+.. _pytidylib: https://pypi.org/project/pytidylib/

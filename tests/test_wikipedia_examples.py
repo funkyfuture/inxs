@@ -1,12 +1,12 @@
 from operator import itemgetter
 
-from lxml import etree
+from delb import Document, TagNode, first, new_tag_node, tag
 
-from inxs import lib, lxml_utils, Rule, Transformation
+from inxs import lib, Rule, Transformation
 
-from tests import equal_subtree, parse
+from tests import equal_subtree
 
-wp_document = parse("""
+wp_document = Document("""
 <persons>
   <person username="JS1">
     <name>John</name>
@@ -21,65 +21,77 @@ wp_document = parse("""
 
 
 def test_wikipedia_example_1():
-    expected = parse("""
+    expected = Document("""
         <root>
           <name username="JS1">John</name>
           <name username="MI1">Morka</name>
         </root>
     """)
 
-    def extract_person(element):
-        return element.attrib['username'], element.find('name').text
+    def extract_person(node: TagNode):
+        return node.attributes['username'], first(node.css_select("name")).full_text
 
-    def append_person(previous_result, result):
-        lxml_utils.subelement(result, 'name', {'username': previous_result[0]},
-                              text=previous_result[1])
+    def append_person(previous_result, result: TagNode):
+        result.append_child(result.new_tag_node(
+            "name", attributes={"username": previous_result[0]},
+            children=[previous_result[1]]
+        ))
 
     transformation = Transformation(
         Rule('person', (extract_person, append_person)),
-        result_object='context.result', context={'result': etree.Element('root')})
+        result_object='context.result', context={'result': new_tag_node('root')})
 
-    # that's five (or not counting line-breaks: nine) lines less sloc than the XSLT
-    # implementation
+    # that's four lines less LOC than the XSLT implementation
 
-    assert equal_subtree(transformation(wp_document), expected)
+    assert equal_subtree(transformation(wp_document.root), expected.root)
 
 
 def test_wikipedia_example_2():
-    expected = parse("""
+    expected = Document("""
         <html xmlns="http://www.w3.org/1999/xhtml">
           <head> <title>Testing XML Example</title> </head>
           <body>
             <h1>Persons</h1>
-              <ul>
-                <li>Ismincius, Morka</li>
-                <li>Smith, John</li>
-              </ul>
+            <ul>
+              <li>Ismincius, Morka</li>
+              <li>Smith, John</li>
+            </ul>
           </body>
         </html>
     """)
 
-    def generate_skeleton(context, e):
-        context.persons_list = e.ul()
-        context.html = e.html(
-            e.head(e.title('Testing XML Example')),
-            e.body(e.h1('Persons'), context.persons_list))
+    def generate_skeleton(context):
+        context.html = new_tag_node(
+            "html", namespace='http://www.w3.org/1999/xhtml',
+            children=(
+                tag("head",
+                    tag("title", "Testing XML Example")),
+                tag("body", (
+                    tag("h1", "Persons"),
+                    tag("ul")
+                )),
+            )
+        )
 
-    def extract_person(element, persons):
-        persons.append((element.find('name').text, element.find('family-name').text))
+    def extract_person(node: TagNode, persons):
+        persons.append(
+            (first(node.css_select("name")).full_text,
+             first(node.css_select("family-name")).full_text)
+        )
 
-    def list_persons(previous_result, persons_list, e):
-        persons_list.extend(e.li(f'{x[1]}, {x[0]}') for x in previous_result)
+    def list_persons(previous_result, html: TagNode):
+        first(html.css_select("html|body html|ul")).append_child(
+            *(html.new_tag_node("li", children=[f'{x[1]}, {x[0]}'])
+              for x in previous_result)
+        )
 
     transformation = Transformation(
-        lib.init_elementmaker(namespace='http://www.w3.org/1999/xhtml'),
         generate_skeleton,
         Rule('person', extract_person),
-        lib.sorter('persons', itemgetter(1)),
+        lib.sort('persons', itemgetter(1)),
         list_persons,
         result_object='context.html', context={'persons': []})
 
-    # that's eight (or not counting line-breaks: thirteen) lines less sloc
-    # than the XSLT implementation
+    # that's four lines more LOC than the XSLT implementation
 
-    assert equal_subtree(transformation(wp_document), expected)
+    assert equal_subtree(transformation(wp_document.root), expected.root)

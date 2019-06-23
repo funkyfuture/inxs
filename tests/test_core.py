@@ -2,11 +2,11 @@ import operator
 import re
 from types import SimpleNamespace
 
-from lxml import etree
-from pytest import mark
+from delb import Document, TagNode
+from pytest import mark, raises
 
 from inxs import (
-    __version__, AbortRule, AbortTransformation, If, Not, Ref, Rule, SkipToNextElement,
+    __version__, AbortRule, AbortTransformation, If, Not, Ref, Rule, SkipToNextNode,
     Transformation,
 )
 from inxs import lib
@@ -21,24 +21,19 @@ def test_aborts():
         put_foo,
         result_object='context'
     )
-    result = transformation(etree.Element('root'))
+    result = transformation(Document('<root/>'))
     assert getattr(result, 'foo', None) is None
 
 
-strip_surrounding_content = Transformation(
-    lib.resolve_xpath_to_element('left', 'right'),
-    name='strip_surrounding_content', result_object='tree'
-)
-
-
 def test_config_is_immutable():
-    doc = etree.fromstring("<root><a/><b/></root>")
-    tree = etree.ElementTree()
-    tree._setroot(doc)
-    left = tree.getpath(doc.find('a'))
-    right = tree.getpath(doc.find('b'))
-    strip_surrounding_content(doc, left=left, right=right)
-    strip_surrounding_content(doc, left=left, right=right)
+    trnsfmtn = Transformation(
+        lib.put_variable("test", "result"),
+        name='strip_surrounding_content', result_object='context.test'
+    )
+    document = Document("<root/>")
+
+    assert trnsfmtn(document) == "result"
+    assert trnsfmtn(document) == "result"
 
 
 def test_dotted_Ref():
@@ -64,25 +59,31 @@ def test_grouped_steps():
         stpgrp_b,
         context={'list': []}, result_object='context.list'
     )
-    result = transformation(etree.Element('root'))
+    result = transformation(Document('<root/>'))
     for exp, val in enumerate(result):
         assert exp == val
 
 
+def test_invalid_input_raises_type_error():
+    transformation = Transformation()
+    with raises(TypeError):
+        transformation({})
+
+
 def test_SkipToNextElement():
-    def more_complicated_test(element):
+    def more_complicated_test(node: TagNode):
         # well, supposedly
-        if 'x' not in element.attrib:
-            raise SkipToNextElement
-        if int(element.attrib['x']) % 2:
-            raise SkipToNextElement
-        return element.tag
+        if 'x' not in node.attributes:
+            raise SkipToNextNode
+        if int(node.attributes['x']) % 2:
+            raise SkipToNextNode
+        return node.local_name
 
     transformation = Transformation(
         Rule('*', (more_complicated_test, lib.append('evens'))),
         context={'evens': []}, result_object='context.evens'
     )
-    doc = etree.fromstring('<root><a x="1"/><b x="2"/><c x="3"/><d x="4"/></root>')
+    doc = Document('<root><a x="1"/><b x="2"/><c x="3"/><d x="4"/></root>')
     assert transformation(doc) == ['b', 'd']
 
 
@@ -99,11 +100,11 @@ def test_subtransformation():
              (lib.debug_message('NO!'), lib.debug_symbols('root'),
               lib.set_localname('neruda'), AbortRule))
     )
-    doc = etree.fromstring('<augustus />')
-    assert etree.QName(doc).text == 'augustus'
+    doc = Document('<augustus />')
+    assert doc.root.local_name == 'augustus'
 
     result = transformation(doc)
-    assert result.tag == 'pablo'
+    assert result.root.local_name == 'pablo'
 
 
 version_pattern = re.compile(r'\d+\.\d+(\.\d+)?((a|b|rc)\d+)?(\.post\d+)?(\.dev\d+)?')

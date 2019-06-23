@@ -1,7 +1,7 @@
 import operator
 import re
 
-from lxml import etree
+from delb import Document, first, is_text_node, is_tag_node
 from pytest import mark
 
 from inxs import (
@@ -10,35 +10,35 @@ from inxs import (
 
 
 def test_Any():
-    document = etree.fromstring('<root><a/><b/></root>')
+    document = Document('<root><a/><b/></root>')
     transformation = Transformation(
         Rule(Any('a', 'b'), lib.set_text('x'))
     )
-    result = transformation(document)
-    assert result.text is None
-    assert all(x.text == 'x' for x in result)
+    result = transformation(document).root
+    assert not result._data_node._exists
+    assert all(x.content == 'x' for x in result.child_nodes(is_text_node))
 
 
 def test_any_element():
-    document = etree.fromstring('<root><a/><b/></root>')
+    document = Document('<root><a/><b/></root>')
     transformation = Transformation(
         Rule('*', lib.set_text('x'))
     )
-    for element in transformation(document):
-        assert element.text == 'x'
+    for node in transformation(document).root.child_nodes():
+        assert node[0] == 'x'
 
 
 @mark.parametrize('constraint', ({'b': 'x'}, {'b': re.compile('^x$')},
                                  MatchesAttributes(lambda x: {'b': 'x'})))
 def test_attributes(constraint):
-    document = etree.fromstring('<root><a b="x"/><a b="y"/></root>')
+    document = Document('<root><a b="x"/><a b="y"/></root>')
     transformation = Transformation(
         Rule(constraint, lib.set_text('x'))
     )
-    result = transformation(document)
-    assert result.text is None
-    assert result[0].text == 'x'
-    assert result[1].text is None
+    result = transformation(document).root
+    assert not result._data_node._exists
+    assert result[0].full_text == 'x', str(result)
+    assert not len(result[1])
 
 
 @mark.parametrize('constraint,expected',
@@ -48,8 +48,8 @@ def test_attributes(constraint):
                    ({re.compile('-type$'): None}, []),
                    ({'nix': 'da'}, [])))
 def test_attributes_re_key(constraint, expected):
-    document = etree.fromstring('<root><item1 default-source="x"/>'
-                                '<item2 default-value="y"/><item3/></root>')
+    document = Document('<root><item1 default-source="x"/>'
+                        '<item2 default-value="y"/><item3/></root>')
     transformation = Transformation(
         Rule(constraint, (lib.get_localname, lib.append('result'))),
         context={'result': []}, result_object='context.result'
@@ -58,7 +58,7 @@ def test_attributes_re_key(constraint, expected):
 
 
 def test_common_conditions():
-    document = etree.fromstring(
+    document = Document(
         '<root><a href="foo"/><a id="bar"/><a href="peng"/></root>')
     transformation = Transformation(
         Rule('*', (lib.get_attribute('href'), lib.append('references'))),
@@ -72,7 +72,7 @@ def test_common_conditions():
                                         ('table + cb', 'X'),
                                         ('table ~ row', '#')))
 def test_css_selector(selector, expected):
-    document = etree.fromstring(
+    document = Document(
         '<section xmlns="foo"><table><head>Table Header</head></table>'
         '<cb type="start">X</cb><row>#</row></section>'
     )
@@ -95,7 +95,7 @@ def test_If():
         Rule(Not(If(return_zero, operator.eq, return_one)), lib.put_variable('b')),
         result_object='context'
     )
-    result = transformation(etree.Element('root'))
+    result = transformation(Document('<root/>'))
     assert hasattr(result, 'a')
     assert hasattr(result, 'b')
 
@@ -105,27 +105,28 @@ def test_is_root_condition():
         Rule(('a', '/'), lib.append('basket')),
         result_object='context.basket', context={'basket': []}
     )
-    result = transformation(etree.fromstring('<a><a/></a>'))
+    result = transformation(Document('<a><a/></a>'))
     assert len(result) == 1
 
 
 def test_OneOf():
-    document = etree.fromstring('<root x="x"><a x="x"/><b x="x"/></root>')
+    document = Document('<root x="x"><a x="x"/><b x="x"/></root>')
     transformation = Transformation(
         Rule(OneOf('a', 'b', {'x': 'x'}), lib.set_text('x'))
     )
-    result = transformation(document)
-    assert result.text == 'x'
-    assert all(x.text is None for x in result)
+    result = transformation(document).root
+    assert result[0] == 'x'
+
+    assert all(x.full_text == "" for x in result.child_nodes(is_tag_node))
 
 
 @mark.parametrize('xpath', ('//a', MatchesXPath(lambda x: '//a')))
 def test_xpath(xpath):
-    document = etree.fromstring('<root><a/><b/></root>')
+    document = Document('<root><a/><b/></root>')
     transformation = Transformation(
         Rule(xpath, lib.set_text('x'))
     )
-    result = transformation(document)
-    assert result.text is None
-    assert result.find('a').text == 'x'
-    assert result.find('b').text is None
+    result = transformation(document).root
+    assert not result._data_node._exists
+    assert first(result.css_select("a")).full_text == "x"
+    assert first(result.css_select("b")).full_text == ""

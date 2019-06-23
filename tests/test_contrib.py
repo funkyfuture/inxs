@@ -1,12 +1,12 @@
-from lxml import etree
+from delb import Document, TextNode
 
-from inxs.contrib import remove_empty_elements
+from inxs.contrib import remove_empty_nodes
 
 from tests import equal_subtree
 
 
 def test_remove_empty_elements():
-    document = etree.fromstring("""
+    document = Document("""
     <root>
       <a/>Hey man, oh leave me alone you know
       <b/>
@@ -19,11 +19,11 @@ def test_remove_empty_elements():
       </g>
     </root>
     """.strip())
-    result = remove_empty_elements(document)
+    result = remove_empty_nodes(document)
+    result.merge_text_nodes()
 
-    expected = etree.fromstring("""
-    <root>
-      Hey man, oh leave me alone you know
+    expected = Document("""
+    <root>Hey man, oh leave me alone you know
       
       <c>Hey man, oh Henry, get off the phone, I gotta</c>
       Hey man, I gotta straighten my face
@@ -34,4 +34,11 @@ def test_remove_empty_elements():
       </g>
     </root>
     """.strip())  # noqa: W293
-    assert equal_subtree(result, expected)
+    assert isinstance(expected.root.last_child, TextNode)
+    assert not expected.root.last_child.strip()
+    expected.root.last_child.detach()
+
+    assert not result.css_select("d")
+    assert not result.css_select("e")
+
+    assert equal_subtree(result.root, expected.root)

@@ -59,7 +59,7 @@ lint: ## check style with flake8
 	tox -e flake8
 
 test: ## run tests quickly with the default Python
-	tox -e py36
+	tox -e py37
 
 test-all: lint test doctest ## run all tests
 
