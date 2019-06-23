@@ -27,8 +27,10 @@ VERSION = $(shell python setup.py --version)
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+black: ## formats code with black
+	black inxs tests
 
+clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
 	rm -fr build/
@@ -55,8 +57,8 @@ doctest: ## Tests docs and contained links
 	$(MAKE) -C docs doctest
 	$(MAKE) -C docs linkcheck
 
-lint: ## check style with flake8
-	tox -e flake8
+lint: ## check style with blakc & flake8
+	tox -e lint
 
 test: ## run tests quickly with the default Python
 	tox -e py37

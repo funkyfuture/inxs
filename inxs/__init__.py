@@ -1,6 +1,7 @@
 # TODO annotate Callable types with signature and return values
 # https://docs.python.org/3.6/library/typing.html?highlight=namedtuple#callable
 # TODO delete unneeded symbols in setup functions' locals
+# TODO globbing is much less stressing than regular expressions
 
 import logging
 import pkg_resources
@@ -10,7 +11,15 @@ from functools import lru_cache
 from os import getenv
 from types import SimpleNamespace
 from typing import (
-    AnyStr, Callable, Dict, Iterator, List, Mapping, Pattern, Sequence, Union,
+    AnyStr,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Pattern,
+    Sequence,
+    Union,
 )
 from typing import Any as AnyType
 
@@ -33,9 +42,9 @@ from inxs.constants import (
 # config
 
 
-__version__ = pkg_resources.get_distribution('inxs').version
+__version__ = pkg_resources.get_distribution("inxs").version
 
-HANDLER_CACHES_SIZE = getenv('INXS_HANDLER_CACHE_SIZE', None)
+HANDLER_CACHES_SIZE = getenv("INXS_HANDLER_CACHE_SIZE", None)
 if HANDLER_CACHES_SIZE is not None:
     HANDLER_CACHES_SIZE = int(HANDLER_CACHES_SIZE)
 
@@ -61,7 +70,7 @@ class FlowControl(InxsException):
 
     def __init__(self):
         super().__init__()
-        dbg(f'{self.__class__.__name__} is evoked.')
+        dbg(f"{self.__class__.__name__} is evoked.")
 
 
 class AbortRule(FlowControl):
@@ -84,23 +93,25 @@ class SkipToNextNode(FlowControl):
 # types
 
 AttributesConditionType = Union[
-    Dict[Union[str, Pattern], Union[str, Pattern, None]], Callable]
+    Dict[Union[str, Pattern], Union[str, Pattern, None]], Callable
+]
 ConditionType = Union[Callable, AnyStr, AttributesConditionType]
-StepType = Union['Rule', Callable, Sequence['StepType']]
+StepType = Union["Rule", Callable, Sequence["StepType"]]
 
 
 # helpers
 
+
 def _condition_factory(condition: ConditionType) -> Callable:
     """ Generates test functions for conditions provided as string or mapping. """
     if isinstance(condition, str):
-        if condition == '/':
+        if condition == "/":
             return _is_root_condition
-        elif condition == '*':
+        elif condition == "*":
             return _is_any_node_condition
-        elif '://' in condition:
+        elif "://" in condition:
             # assumes URI
-            dbg(f'Adding {condition} as namespace condition.')
+            dbg(f"Adding {condition} as namespace condition.")
             return HasNamespace(condition)
         elif condition.isalpha():
             # assumes tag
@@ -112,15 +123,15 @@ def _condition_factory(condition: ConditionType) -> Callable:
             pass
         else:
             dbg(
-                f'Translated css selector {condition}` to XPath expression '
-                f'{_condition}.'
+                f"Translated css selector {condition}` to XPath expression "
+                f"{_condition}."
             )
             condition = _condition
         # assumes XPath
-        dbg(f'Adding {condition} as XPath condition.')
+        dbg(f"Adding {condition} as XPath condition.")
         return MatchesXPath(condition)
     elif isinstance(condition, Mapping):
-        dbg(f'Adding {condition} as attribute condition.')
+        dbg(f"Adding {condition} as attribute condition.")
         return MatchesAttributes(condition)
     else:
         return condition
@@ -129,10 +140,10 @@ def _condition_factory(condition: ConditionType) -> Callable:
 class _CSSToXPathTranslator(cssselect.GenericTranslator):
     def selector_to_xpath(self, *args, **kwargs):
         result = super().selector_to_xpath(*args, **kwargs)
-        if result.startswith('descendant-or-self::'):
+        if result.startswith("descendant-or-self::"):
             # though this should be equivalent, the abbreviated form proved
             # to work in cases where the full wouldn't
-            result = result.replace('descendant-or-self::', '//', 1)
+            result = result.replace("descendant-or-self::", "//", 1)
         return result
 
 
@@ -142,7 +153,7 @@ _css_selector_translator = _CSSToXPathTranslator().css_to_xpath
 def dot_lookup(obj: AnyType, name: str):
     """ Looks up the attribute ``name`` from ``obj`` considering nested attributes
         that are separated by a ``.`` """
-    for _name in name.split('.'):
+    for _name in name.split("."):
         obj = getattr(obj, _name)
     return obj
 
@@ -168,7 +179,7 @@ def _is_flow_control(obj: AnyType) -> bool:
         return False
 
 
-def _is_root_condition(node: TagNode, transformation: 'Transformation'):
+def _is_root_condition(node: TagNode, transformation: "Transformation"):
     return node.parent is None
 
 
@@ -261,14 +272,12 @@ def MatchesXPath(xpath: Union[str, Callable]) -> Callable:
         If the ``xpath`` argument is a callable, it will be called with the current
         transformation as argument to obtain the expression. """
 
-    def callable_evaluator(node: TagNode,
-                           transformation: Transformation) -> bool:
+    def callable_evaluator(node: TagNode, transformation: Transformation) -> bool:
         _xpath = xpath(transformation)
         dbg(f"Resolved XPath from callable: '{_xpath}'")
         return node in transformation.root.xpath(_xpath)
 
-    def string_evaluator(node: TagNode,
-                         transformation: Transformation) -> bool:
+    def string_evaluator(node: TagNode, transformation: Transformation) -> bool:
         return node in transformation.root.xpath(xpath)
 
     return callable_evaluator if callable(xpath) else string_evaluator
@@ -288,19 +297,19 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
 
     def callable_evaluator(node: TagNode, transformation: Transformation):
         _constraints = constraints(transformation)
-        dbg(
-            f"Resolved attributes' constraints from callable: '{_constraints}'"
-        )
+        dbg(f"Resolved attributes' constraints from callable: '{_constraints}'")
         return MatchesAttributes(_constraints)(node, transformation)
 
     if callable(constraints):
         return callable_evaluator
 
     key_only_constraints = [k for k, v in constraints.items() if v is None]
-    key_string_constraints = {k: v for k, v in constraints.items()
-                              if isinstance(k, str) and v is not None}
-    key_re_constraints = {k: v for k, v in constraints.items()
-                          if isinstance(k, Pattern) and v is not None}
+    key_string_constraints = {
+        k: v for k, v in constraints.items() if isinstance(k, str) and v is not None
+    }
+    key_re_constraints = {
+        k: v for k, v in constraints.items() if isinstance(k, Pattern) and v is not None
+    }
 
     def evaluator(node: TagNode, _) -> bool:
         attributes = node.attributes
@@ -312,8 +321,9 @@ def MatchesAttributes(constraints: AttributesConditionType) -> Callable:
         for key_constraint in key_only_constraints:
             if isinstance(key_constraint, str) and key_constraint not in attributes:
                 return False
-            elif isinstance(key_constraint, Pattern) and \
-                    not any(key_constraint.match(key) for key in attributes.keys()):
+            elif isinstance(key_constraint, Pattern) and not any(
+                key_constraint.match(key) for key in attributes.keys()
+            ):
                 return False
 
         value_string_constraints, value_re_constraints = {}, {}
@@ -358,14 +368,14 @@ def Ref(name: str) -> Callable:
     """
 
     def simple_resolver(transformation: Transformation) -> AnyType:
-        dbg('Resolving {name}.')
+        dbg("Resolving {name}.")
         return transformation._available_symbols[name]
 
     setattr(simple_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
     def dot_resolver(transformation: Transformation) -> AnyType:
-        dbg(f'Resolving {name}.')
-        token = name.split('.')
+        dbg(f"Resolving {name}.")
+        token = name.split(".")
         obj = transformation._available_symbols[token[0]]
         for _name in token[1:]:
             obj = getattr(obj, _name)
@@ -373,7 +383,7 @@ def Ref(name: str) -> Callable:
 
     setattr(dot_resolver, REF_IDENTIFYING_ATTRIBUTE, None)
 
-    return dot_resolver if '.' in name else simple_resolver
+    return dot_resolver if "." in name else simple_resolver
 
 
 def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
@@ -393,14 +403,20 @@ def If(x: AnyType, operator: Callable, y: AnyType) -> Callable:
     # TODO? allow primitive expressions for stdlib.operator's members
     def evaluator(_, transformation: Transformation) -> AnyType:
         if callable(x):
-            _x = x(**dependency_injection.resolve_dependencies(
-                x, transformation._available_symbols).as_kwargs)
+            _x = x(
+                **dependency_injection.resolve_dependencies(
+                    x, transformation._available_symbols
+                ).as_kwargs
+            )
             dbg(f"x resolved to '{_x}'")
         else:
             _x = x
         if callable(y):
-            _y = y(**dependency_injection.resolve_dependencies(
-                y, transformation._available_symbols).as_kwargs)
+            _y = y(
+                **dependency_injection.resolve_dependencies(
+                    y, transformation._available_symbols
+                ).as_kwargs
+            )
             dbg(f"y resolved to '{_y}'")
         else:
             _y = y
@@ -436,11 +452,16 @@ class Rule:
                                 :ref:`traversal_strategies` for details.
         :type traversal_order: Integer.
     """
-    __slots__ = ('name', 'conditions', 'handlers', 'traversal_order')
 
-    def __init__(self, conditions: Union[ConditionType, Sequence[ConditionType]],
-                 handlers: Union[Callable, Sequence[Callable]],
-                 name: str = None, traversal_order: int = None) -> None:
+    __slots__ = ("name", "conditions", "handlers", "traversal_order")
+
+    def __init__(
+        self,
+        conditions: Union[ConditionType, Sequence[ConditionType]],
+        handlers: Union[Callable, Sequence[Callable]],
+        name: str = None,
+        traversal_order: int = None,
+    ) -> None:
 
         self.name: str = name
         dbg(f"Initializing rule '{name}'.")
@@ -452,7 +473,8 @@ class Rule:
         if _is_root_condition in self.conditions:
             traversal_order = TRAVERSE_ROOT_ONLY
             self.conditions = tuple(
-                x for x in self.conditions if x is not _is_root_condition)
+                x for x in self.conditions if x is not _is_root_condition
+            )
 
         if not isinstance(handlers, Sequence):
             handlers = (handlers,)
@@ -508,29 +530,31 @@ class Transformation:
                          to to bottom. See :ref:`traversal_strategies` for possible
                          values.
     """
-    __slots__ = ('config', 'steps', 'states')
+
+    __slots__ = ("config", "steps", "states")
 
     config_defaults = {
-        'common_rule_conditions': None,
-        'context': {},
-        'copy': True,
-        'name': None,
-        'result_object': 'root',
-        'traversal_order': (
-                TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
-        )
+        "common_rule_conditions": None,
+        "context": {},
+        "copy": True,
+        "name": None,
+        "result_object": "root",
+        "traversal_order": (
+            TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM
+        ),
     }
     """ The default :term:`configuration` values. Changing members on an instance
         actually affects the class unless a copy of this mapping as copied and bound
         as instance attribute. """
 
     traversers = {
-        TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_BOTTOM_TO_TOP:
-            traverse_df_ltr_btt,
-        TRAVERSE_DEPTH_FIRST | TRAVERSE_LEFT_TO_RIGHT | TRAVERSE_TOP_TO_BOTTOM:
-            traverse_df_ltr_ttb,
-        TRAVERSE_ROOT_ONLY:
-            traverse_root,
+        TRAVERSE_DEPTH_FIRST
+        | TRAVERSE_LEFT_TO_RIGHT
+        | TRAVERSE_BOTTOM_TO_TOP: traverse_df_ltr_btt,
+        TRAVERSE_DEPTH_FIRST
+        | TRAVERSE_LEFT_TO_RIGHT
+        | TRAVERSE_TOP_TO_BOTTOM: traverse_df_ltr_ttb,
+        TRAVERSE_ROOT_ONLY: traverse_root,
     }
 
     def __init__(self, *steps: StepType, **config: AnyType) -> None:
@@ -545,23 +569,29 @@ class Transformation:
     @property
     def name(self):
         """ The ``name`` member of the transformation's :term:`configuration`. """
-        return getattr(self.config, 'name', None)
+        return getattr(self.config, "name", None)
 
     def _expand_rules_conditions(self):
         common_rule_conditions = self.config.common_rule_conditions
         if common_rule_conditions is None:
             return
 
-        if not isinstance(common_rule_conditions, Sequence) or \
-                isinstance(common_rule_conditions, str):
+        if not isinstance(common_rule_conditions, Sequence) or isinstance(
+            common_rule_conditions, str
+        ):
             common_rule_conditions = (common_rule_conditions,)
 
         expanded_steps = []
         for step in self.steps:
             if isinstance(step, Rule):
                 expanded_steps.append(
-                    Rule(common_rule_conditions + step.conditions, step.handlers,
-                         step.name, step.traversal_order))
+                    Rule(
+                        common_rule_conditions + step.conditions,
+                        step.handlers,
+                        step.name,
+                        step.traversal_order,
+                    )
+                )
             else:
                 expanded_steps.append(step)
         self.steps = tuple(expanded_steps)
@@ -573,17 +603,19 @@ class Transformation:
                 setattr(self.config, key, value)
 
     def _validate_steps(self):
-        assert all(isinstance(x, (Callable, Rule)) for x in self.steps), \
-            'Transformation steps must be either a `Rule` instance or a callable.'
+        assert all(
+            isinstance(x, (Callable, Rule)) for x in self.steps
+        ), "Transformation steps must be either a `Rule` instance or a callable."
 
-    def __call__(self, input: Union[Document, TagNode],
-                 copy: bool = None, **context: AnyType) -> AnyType:
+    def __call__(
+        self, input: Union[Document, TagNode], copy: bool = None, **context: AnyType
+    ) -> AnyType:
 
         copy = self.config.copy if copy is None else copy
         self._init_transformation(input, copy, context)
 
         for step in self.steps:
-            _step_name = step.name if hasattr(step, 'name') else step.__name__
+            _step_name = step.name if hasattr(step, "name") else step.__name__
             dbg(f"Processing rule '{_step_name}'.")
 
             self.states.current_step = step
@@ -608,13 +640,17 @@ class Transformation:
         self._finalize_transformation()
         return result
 
-    def _init_transformation(self, input: Union[Document, TagNode], copy: bool,
-                             context: Dict[AnyStr, AnyType]) -> None:
-        dbg('Initializing processing.')
+    def _init_transformation(
+        self,
+        input: Union[Document, TagNode],
+        copy: bool,
+        context: Dict[AnyStr, AnyType],
+    ) -> None:
+        dbg("Initializing processing.")
         if not isinstance(input, (Document, TagNode)):
             raise TypeError(
-                'A transformation must be called with a Document or TagNode instance, '
-                f'got a {type(input)}.'
+                "A transformation must be called with a Document or TagNode instance, "
+                f"got a {type(input)}."
             )
 
         self.states = SimpleNamespace()
@@ -623,48 +659,50 @@ class Transformation:
 
         resolved_context = deepcopy(self.config.context)
         resolved_context.update(context)
-        dbg(f'Initial context:\n{resolved_context}')
+        dbg(f"Initial context:\n{resolved_context}")
         self.states.context = SimpleNamespace(**resolved_context)
 
         if isinstance(input, Document):
             if copy:
-                dbg('Cloning source.')
+                dbg("Cloning source.")
                 input = input.clone()
             self.states.root = input.root
         else:
             if copy:
-                dbg('Cloning source.')
+                dbg("Cloning source.")
                 input = input.clone(deep=True)
             self.states.root = input
 
         static_symbols = {
-            'config': self.config,
-            'context': self.states.context,
-            'nsmap': self.states.root.namespaces,
-            'root': self.states.root,
-            'transformation': self,
+            "config": self.config,
+            "context": self.states.context,
+            "nsmap": self.states.root.namespaces,
+            "root": self.states.root,
+            "transformation": self,
         }
         self.states.dynamic_symbols = {}
-        self.states.symbols_chain = ChainMap(self.states.dynamic_symbols,
-                                             static_symbols,
-                                             self.states.context.__dict__,
-                                             self.config.__dict__)
+        self.states.symbols_chain = ChainMap(
+            self.states.dynamic_symbols,
+            static_symbols,
+            self.states.context.__dict__,
+            self.config.__dict__,
+        )
 
     def _apply_rule(self, rule: Rule) -> None:
         traverser = self._get_traverser(rule.traversal_order)
-        dbg(f'Using traverser: {traverser}')
+        dbg(f"Using traverser: {traverser}")
 
         for node in traverser(self.states.root):
-            dbg(f'Evaluating {node}.')
+            dbg(f"Evaluating {node}.")
             self.states.current_node = node
             try:
                 if self._test_conditions(node, rule.conditions):
                     self._apply_handlers(*rule.handlers)
             except AbortRule:
-                dbg('Aborting rule.')
+                dbg("Aborting rule.")
                 break
             except SkipToNextNode:
-                dbg('Skipping to next node.')
+                dbg("Skipping to next node.")
                 continue
 
         self.states.current_node = None
@@ -678,33 +716,33 @@ class Transformation:
             raise NotImplementedError
         return traverser
 
-    def _test_conditions(self, node: TagNode,
-                         conditions: Sequence[Callable]) -> bool:
+    def _test_conditions(self, node: TagNode, conditions: Sequence[Callable]) -> bool:
         # there's no dependency injection here because its overhead
         # shall be avoided during testing conditions
         for condition in conditions:
             dbg(f"Testing condition '{condition}'.")
             if not condition(node, self):
-                dbg('The condition did not apply.')
+                dbg("The condition did not apply.")
                 return False
-            dbg('The condition applied.')
+            dbg("The condition applied.")
         return True
 
     def _apply_handlers(self, *handlers: Union[Callable, Exception]) -> None:
-        dbg('Applying handlers.')
+        dbg("Applying handlers.")
         for handler in handlers:
             if _is_flow_control(handler):
                 raise handler
             kwargs = dependency_injection.resolve_dependencies(
-                handler, self._available_symbols).as_kwargs
+                handler, self._available_symbols
+            ).as_kwargs
             if isinstance(handler, Transformation):
-                kwargs['input'] = self.states.current_node or self.states.root
-                kwargs['copy'] = False
+                kwargs["input"] = self.states.current_node or self.states.root
+                kwargs["copy"] = False
             dbg(f"Applying handler {handler}.")
             self.states.previous_result = handler(**kwargs)
 
     def _finalize_transformation(self) -> None:
-        dbg('Finalizing processing.')
+        dbg("Finalizing processing.")
         self.states = None
 
     @property
@@ -726,10 +764,12 @@ class Transformation:
               :term:`transformation root`.
             - ``transformation`` - The calling :class:`Transformation` instance.
         """
-        self.states.dynamic_symbols.update({
-            'node': self.states.current_node,
-            'previous_result': self.states.previous_result,
-        })
+        self.states.dynamic_symbols.update(
+            {
+                "node": self.states.current_node,
+                "previous_result": self.states.previous_result,
+            }
+        )
         return self.states.symbols_chain
 
     # aliases that are supposed to be broken when the transformation isn't processing
@@ -748,14 +788,29 @@ class Transformation:
 
 
 __all__ = [
-    '__version__', 'logger',
-    'TRAVERSE_BOTTOM_TO_TOP', 'TRAVERSE_DEPTH_FIRST', 'TRAVERSE_LEFT_TO_RIGHT',
-    'TRAVERSE_RIGHT_TO_LEFT', 'TRAVERSE_ROOT_ONLY', 'TRAVERSE_TOP_TO_BOTTOM',
-    'TRAVERSE_WIDTH_FIRST',
-    AbortRule.__name__, AbortTransformation.__name__,
-    SkipToNextNode.__name__, InxsException.__name__,
-    'Any', 'Not', 'OneOf',
-    'HasNamespace', 'HasLocalname', 'MatchesAttributes', 'MatchesXPath',
-    'If', 'Ref',
-    Rule.__name__, Once.__name__, Transformation.__name__
+    "__version__",
+    "logger",
+    "TRAVERSE_BOTTOM_TO_TOP",
+    "TRAVERSE_DEPTH_FIRST",
+    "TRAVERSE_LEFT_TO_RIGHT",
+    "TRAVERSE_RIGHT_TO_LEFT",
+    "TRAVERSE_ROOT_ONLY",
+    "TRAVERSE_TOP_TO_BOTTOM",
+    "TRAVERSE_WIDTH_FIRST",
+    AbortRule.__name__,
+    AbortTransformation.__name__,
+    SkipToNextNode.__name__,
+    InxsException.__name__,
+    "Any",
+    "Not",
+    "OneOf",
+    "HasNamespace",
+    "HasLocalname",
+    "MatchesAttributes",
+    "MatchesXPath",
+    "If",
+    "Ref",
+    Rule.__name__,
+    Once.__name__,
+    Transformation.__name__,
 ]

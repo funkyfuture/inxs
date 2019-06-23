@@ -17,5 +17,5 @@ def main(*args):
 
 # TODO case-study with this use-case
 def test_mods_to_tei(datadir):
-    main('--inplace', datadir / 'mods_to_tei.py', datadir / 'mods_to_tei.xml')
-    assert equal_documents(datadir / 'mods_to_tei.xml', datadir / 'mods_to_tei_exp.xml')
+    main("--inplace", datadir / "mods_to_tei.py", datadir / "mods_to_tei.xml")
+    assert equal_documents(datadir / "mods_to_tei.xml", datadir / "mods_to_tei_exp.xml")

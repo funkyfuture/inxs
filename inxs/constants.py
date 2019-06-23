@@ -1,4 +1,4 @@
-REF_IDENTIFYING_ATTRIBUTE = '_this_is_a_Ref_resolver_'
+REF_IDENTIFYING_ATTRIBUTE = "_this_is_a_Ref_resolver_"
 
 TRAVERSE_DEPTH_FIRST = True << 0
 TRAVERSE_WIDTH_FIRST = False << 0

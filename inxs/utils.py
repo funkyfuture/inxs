@@ -6,7 +6,7 @@ from inxs.constants import REF_IDENTIFYING_ATTRIBUTE
 
 
 # TODO add unicode whitespaces
-WHITESPACES_WO_SPACE = string.whitespace.replace(' ', '')
+WHITESPACES_WO_SPACE = string.whitespace.replace(" ", "")
 
 # helpers
 
@@ -30,12 +30,13 @@ def is_Ref(obj):
 
 @lru_cache(8)
 def _make_whitespace_translation_table(chars: str) -> Dict[int, str]:
-    return str.maketrans(chars, ' ' * len(chars))
+    return str.maketrans(chars, " " * len(chars))
 
 
 @export
-def reduce_whitespaces(text: str, translate_to_space: str = WHITESPACES_WO_SPACE,
-                       strip: str = 'lr') -> str:
+def reduce_whitespaces(
+    text: str, translate_to_space: str = WHITESPACES_WO_SPACE, strip: str = "lr"
+) -> str:
     """ Reduces the whitespaces of the provided string by replacing any of the
         defined whitespaces with a simple space (U+20) and stripping consecutive ones to
         a single one.
@@ -51,12 +52,12 @@ def reduce_whitespaces(text: str, translate_to_space: str = WHITESPACES_WO_SPACE
     """
     translation_table = _make_whitespace_translation_table(translate_to_space)
     result = text.translate(translation_table)
-    if 'l' in strip:
+    if "l" in strip:
         result = result.lstrip()
-    if 'r' in strip:
+    if "r" in strip:
         result = result.rstrip()
-    while '  ' in result:
-        result = result.replace('  ', ' ')
+    while "  " in result:
+        result = result.replace("  ", " ")
     return result
 
 

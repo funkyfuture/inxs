@@ -77,8 +77,10 @@ Ready to contribute? Here's how to set up `inxs` for local development.
 
    Now you can make your changes locally.
 
-6. When you're done making changes, check that your changes pass all QA tests::
+6. When you're done making changes, format the code with black_ and check that your
+   changes pass all QA tests::
 
+    $ make black
     $ tox
 
 7. Commit your changes and push your branch to GitHub::
@@ -101,5 +103,6 @@ Before you submit a pull request, check that it meets these guidelines:
    and make sure that the tests pass for all supported Python versions.
 
 
+.. _black: https://pypi.org/project/black/
 .. _fork: https://github.com/funkyfuture/inxs#fork-destination-box
-.. _pew: https://pypi.python.org/pypi/pew
+.. _pew: https://pypi.org/project/pew/

@@ -16,7 +16,11 @@ import re
 from typing import Any, Callable, Dict, List, Mapping, Sequence, Tuple
 
 from delb import (
-    TagNode, TextNode, is_tag_node, altered_default_filters, is_text_node,
+    TagNode,
+    TextNode,
+    is_tag_node,
+    altered_default_filters,
+    is_text_node,
     tag,
 )
 
@@ -40,9 +44,10 @@ def export(func):
 
 # the actual lib
 
+
 @export
 @singleton_handler
-def add_html_classes(*classes, target=Ref('node')):
+def add_html_classes(*classes, target=Ref("node")):
     """ Adds the string tokens passed as positional arguments to the
         ``classes`` attribute of a node specified by ``target``.
         An argument can also be a sequence of strings or a :func:`~inxs.Ref` that
@@ -73,15 +78,16 @@ def add_html_classes(*classes, target=Ref('node')):
                 add_items(_classes, cls)
 
         node = target(transformation)
-        value = node.attributes.get('class', '').strip()
+        value = node.attributes.get("class", "").strip()
         _classes.update(x.strip() for x in value.split() if x)
-        node.attributes['class'] = ' '.join(sorted(_classes))
+        node.attributes["class"] = " ".join(sorted(_classes))
+
     return processor
 
 
 @export
 @singleton_handler
-def append(name, symbol=Ref('previous_result'), copy_node=False):
+def append(name, symbol=Ref("previous_result"), copy_node=False):
     """ Appends the object referenced by ``symbol`` (default: the result of the previous
         :term:`handler function`) to the object available as ``name`` in the
         :attr:`Transformation._available_symbols`. If the object is a
@@ -94,8 +100,8 @@ def append(name, symbol=Ref('previous_result'), copy_node=False):
         if isinstance(obj, TagNode) and copy_node:
             obj = obj.clone(deep=True)
 
-        if '.' in name:
-            namespace, path = name.split('.', maxsplit=1)
+        if "." in name:
+            namespace, path = name.split(".", maxsplit=1)
             target = transformation._available_symbols[namespace]
             target = dot_lookup(target, path)
         else:
@@ -133,14 +139,14 @@ def concatenate(*parts):
         returning such. """
 
     def handler(transformation) -> str:
-        result = ''
+        result = ""
         for part in parts:
             if callable(part):
                 _part = part(transformation)
             elif isinstance(part, (str, List)):
                 _part = part
             else:
-                raise RuntimeError(f'Unhandled type: {type(part)}')
+                raise RuntimeError(f"Unhandled type: {type(part)}")
             result += _part
         return result
 
@@ -149,7 +155,7 @@ def concatenate(*parts):
 
 @export
 @singleton_handler
-def debug_dump_document(name='tree'):
+def debug_dump_document(name="tree"):
     """ Dumps all contents of the node referenced by ``name`` from the
         :attr:`inxs.Transformation._available_symbols` to the log at info level. """
 
@@ -186,7 +192,7 @@ def debug_symbols(*names):
 
     def handler(transformation):
         for name in names:
-            nfo(f'symbol {name}: {transformation._available_symbols[name]!r}')
+            nfo(f"symbol {name}: {transformation._available_symbols[name]!r}")
         return transformation.states.previous_result
 
     return handler
@@ -294,20 +300,19 @@ def insert_fontawesome_icon(name: str, position: str, spin: bool = False):
         ``name`` at ``position`` of which only ``after`` is implemented atm.
 
         It employs semantics for Font Awesome 5. """
+
     def after_handler(node: TagNode):
-        classes = f'fas fa-{name}'
+        classes = f"fas fa-{name}"
         if spin:
-            classes += ' fa-spin'
+            classes += " fa-spin"
         node.add_next(tag("i", {"class": classes}))
 
-    return {
-        'after': after_handler,
-    }[position]
+    return {"after": after_handler}[position]
 
 
 @export
 @singleton_handler
-def join_to_string(separator: str = ' ', symbol='previous_result'):
+def join_to_string(separator: str = " ", symbol="previous_result"):
     """ Joins the object referenced by ``symbol`` around the given
         ``separator`` and returns it. """
 
@@ -378,7 +383,7 @@ def prefix_attributes(prefix: str, *attributes: str):
 
 @export
 @singleton_handler
-def put_variable(name, value=Ref('previous_result')):
+def put_variable(name, value=Ref("previous_result")):
     """ Puts ``value``as ``name`` to the :term:`context` namespace, by default the
         value is determined by a :func:`inxs.Ref` to ``previous_result``. """
 
@@ -399,10 +404,10 @@ def put_variable(name, value=Ref('previous_result')):
         return transformation.states.previous_result
 
     if is_Ref(value):
-        if '.' in name:
+        if "." in name:
             return ref_handler_dot_lookup
         return ref_handler
-    elif '.' in name:
+    elif "." in name:
         return simple_handler_dot_lookup
     else:
         return simple_handler
@@ -439,12 +444,7 @@ def remove_node(node: TagNode):
 
 @export
 @singleton_handler
-def remove_nodes(
-        references,
-        keep_children=False,
-        preserve_text=False,
-        clear_ref=True
-):
+def remove_nodes(references, keep_children=False, preserve_text=False, clear_ref=True):
     """ Removes all nodes from their tree that are referenced in a list that is
         available as ``references``. The nodes' children are retained when
         ``keep_children`` is passed as ``True``, or only the contained text when
@@ -528,7 +528,7 @@ def resolve_xpath_to_node(*names):
             elif len(resolved_nodes) == 1:
                 setattr(context, name, resolved_nodes[0])
             else:
-                raise RuntimeError(f'More than one node matched {expression}')
+                raise RuntimeError(f"More than one node matched {expression}")
         return transformation.states.previous_result
 
     return resolver
@@ -536,7 +536,7 @@ def resolve_xpath_to_node(*names):
 
 @export
 @singleton_handler
-def set_attribute(name, value=Ref('previous_result')):
+def set_attribute(name, value=Ref("previous_result")):
     """ Sets an attribute ``name`` with ``value``. """
 
     def simple_handler(node: TagNode, previous_result: Any) -> Any:
@@ -544,7 +544,7 @@ def set_attribute(name, value=Ref('previous_result')):
         return previous_result
 
     def resolving_handler(
-            node: TagNode, previous_result: Any, transformation: Transformation
+        node: TagNode, previous_result: Any, transformation: Transformation
     ) -> Any:
         node.attributes[name] = value(transformation)
         return previous_result
@@ -569,7 +569,7 @@ def set_localname(name):
 
 @export
 @singleton_handler
-def set_text(text=Ref('previous_result')):
+def set_text(text=Ref("previous_result")):
     """ Sets the nodes's first child node that is of :class:`delb.TextNode` type to the
         one provided as ``text``, it can also be a :func:`inxs.Ref`.
         If the first node isn't a text node, one will be inserted. """
@@ -596,7 +596,7 @@ def set_text(text=Ref('previous_result')):
 
 @export
 @singleton_handler
-def sort(name: str = 'previous_result', key: Callable = lambda x: x):
+def sort(name: str = "previous_result", key: Callable = lambda x: x):
     """ Sorts the object referenced by ``name`` in the :term:`context` using ``key`` as
         :term:`key function`. """
 

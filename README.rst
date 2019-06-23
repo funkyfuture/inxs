@@ -10,7 +10,7 @@ inxs is ISC-licensed.
 inxs is fully documented here: https://inxs.readthedocs.io/en/latest/
 
 .. image:: https://img.shields.io/pypi/v/inxs.svg
-   :target: https://pypi.python.org/project/inxs
+   :target: https://pypi.org/project/inxs
 .. image:: https://img.shields.io/pypi/l/inxs.svg
    :target: https://github.com/funkyfuture/inxs/blob/master/LICENSE
 .. image:: https://img.shields.io/pypi/pyversions/inxs.svg
