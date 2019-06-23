@@ -28,14 +28,15 @@ setup(
     package_dir={'inxs': 'inxs'},
     include_package_data=True,
     install_requires=('delb', 'dependency_injection'),
-    license="ISC license",  # TODO change to agpl
+    license="AGPLv3+",
     zip_safe=False,
     entry_points={'console_scripts': ['inxs = inxs.cli:main']},
     keywords='inxs xml processing transformation framework xslt not-xslt',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: ISC License (ISCL)',
+        'License :: OSI Approved :: GNU Affero General Public License v3 '
+        'or later (AGPLv3+)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3 :: Only',
