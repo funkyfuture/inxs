@@ -1,7 +1,7 @@
 History
 =======
 
-0.2b1 (unreleased)
+0.2b1 (2019-06-23)
 ------------------
 
 * refactored to base on delb_ instead of lxml
