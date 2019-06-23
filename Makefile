@@ -83,11 +83,11 @@ servedocs: docs ## compile the docs watching for changes
 showdocs:
 	$(BROWSER) docs/_build/html/index.html
 
-release: clean test-all clean ## package and upload a release
+release: clean test-all dist ## package and upload a release
 	git push
 	git tag -f $(VERSION)
 	git push -f origin $(VERSION)
-	python setup.py sdist upload
+	twine upload dist/*
 
 dist: clean ## builds source and wheel package
 	python setup.py sdist
