@@ -1,18 +1,17 @@
-sudo: false
+dist: xenial
 language: python
 cache: pip
-python:
-  - 3.6
+python: "3.7"
 
 env:
-  - TOXENV=py36
-  - TOXENV=flake8
+  - TOXENV=py37
+  - TOXENV=lint
   - TOXENV=doctest
 
 install:
   - travis_retry pip install tox
-  - if [[ $TOXENV == py36 ]]; then travis_retry pip install coveralls; fi
+  - if [[ $TOXENV == py37 ]]; then travis_retry pip install coveralls; fi
 script:
   - tox
 after_success:
-  - if [[ $TOXENV == py36 ]]; then coveralls; fi
+  - if [[ $TOXENV == py37 ]]; then coveralls; fi
